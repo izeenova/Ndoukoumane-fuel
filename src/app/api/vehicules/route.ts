@@ -27,8 +27,11 @@ export async function GET(req: NextRequest) {
           statut ? { statut: statut as 'ACTIF' | 'EN_REPARATION' | 'HORS_SERVICE' } : {},
         ]
       },
-      include: { alerte: true },
-      orderBy: { createdAt: 'desc' },
+      include: {
+        alerte: true,
+        personnelAssigne: { select: { id: true, prenom: true, nom: true, matricule: true } },
+      },
+      orderBy: { immatriculation: 'asc' },
     })
 
     return NextResponse.json(vehicules)

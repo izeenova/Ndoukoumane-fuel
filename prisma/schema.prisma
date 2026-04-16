@@ -46,9 +46,11 @@ model Vehicule {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
-  sorties     SortieCarburant[]
-  reparations Reparation[]
-  alerte      AlerteCarburant?
+  sorties            SortieCarburant[]
+  reparations        Reparation[]
+  alerte             AlerteCarburant?
+  personnelAssigne   Personnel?      @relation("VehiculeAssigne", fields: [personnelAssigneId], references: [id])
+  personnelAssigneId String?         @unique
 }
 
 enum TypeVehicule {
@@ -75,8 +77,9 @@ model Personnel {
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
 
-  sorties     SortieCarburant[]
-  reparations Reparation[]
+  sorties         SortieCarburant[]
+  reparations     Reparation[]
+  vehiculeAssigne Vehicule?         @relation("VehiculeAssigne")
 }
 
 enum RolePersonnel {

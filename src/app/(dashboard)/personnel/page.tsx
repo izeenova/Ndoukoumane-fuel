@@ -11,12 +11,13 @@ interface Personnel {
   telephone: string | null
   matricule: string | null
   actif: boolean
+  vehiculeAssigne: { immatriculation: string; marque: string; modele: string } | null
 }
 
 const ROLE_COLORS: Record<string, string> = {
   CHAUFFEUR: 'bg-blue-500/20 text-blue-400',
   MECANO: 'bg-orange-500/20 text-orange-400',
-  RESPONSABLE_SERVICE: 'bg-purple-500/20 text-purple-400',
+  RESPONSABLE_SERVICE: 'bg-slate-500/20 text-slate-400',
 }
 
 const emptyForm = { nom: '', prenom: '', role: 'CHAUFFEUR', telephone: '', matricule: '' }
@@ -102,7 +103,7 @@ export default function PersonnelPage() {
           <option value="">Tous les rôles</option>
           <option value="CHAUFFEUR">Chauffeurs</option>
           <option value="MECANO">Mécaniciens</option>
-          <option value="RESPONSABLE_SERVICE">Resp. Service</option>
+          <option value="RESPONSABLE_SERVICE">Personnel</option>
         </select>
       </div>
 
@@ -114,16 +115,17 @@ export default function PersonnelPage() {
               <tr className="border-b border-slate-700/50">
                 <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider">Nom</th>
                 <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider">Rôle</th>
+                <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider hidden sm:table-cell">Véhicule</th>
                 <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider hidden md:table-cell">Matricule</th>
-                <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider hidden md:table-cell">Téléphone</th>
+                <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell">Téléphone</th>
                 <th className="text-right px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {loading ? (
-                <tr><td colSpan={5} className="text-center py-12 text-slate-500 text-sm">Chargement...</td></tr>
+                <tr><td colSpan={6} className="text-center py-12 text-slate-500 text-sm">Chargement...</td></tr>
               ) : personnel.length === 0 ? (
-                <tr><td colSpan={5} className="text-center py-12 text-slate-500 text-sm">Aucun personnel trouvé</td></tr>
+                <tr><td colSpan={6} className="text-center py-12 text-slate-500 text-sm">Aucun personnel trouvé</td></tr>
               ) : personnel.map(p => (
                 <tr key={p.id} className={`hover:bg-slate-800/30 transition-colors ${!p.actif ? 'opacity-50' : ''}`}>
                   <td className="px-5 py-4">
@@ -144,10 +146,20 @@ export default function PersonnelPage() {
                       {getRolePersonnelLabel(p.role)}
                     </span>
                   </td>
+                  <td className="px-5 py-4 hidden sm:table-cell">
+                    {p.vehiculeAssigne ? (
+                      <div>
+                        <p className="text-white text-sm font-mono font-semibold">{p.vehiculeAssigne.immatriculation}</p>
+                        <p className="text-slate-500 text-xs">{p.vehiculeAssigne.marque} {p.vehiculeAssigne.modele}</p>
+                      </div>
+                    ) : (
+                      <span className="text-slate-600 text-sm">—</span>
+                    )}
+                  </td>
                   <td className="px-5 py-4 hidden md:table-cell">
                     <span className="text-slate-400 text-sm font-mono">{p.matricule || '—'}</span>
                   </td>
-                  <td className="px-5 py-4 hidden md:table-cell">
+                  <td className="px-5 py-4 hidden lg:table-cell">
                     <span className="text-slate-400 text-sm">{p.telephone || '—'}</span>
                   </td>
                   <td className="px-5 py-4 text-right">
@@ -208,7 +220,7 @@ export default function PersonnelPage() {
                     className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="CHAUFFEUR">Chauffeur</option>
                     <option value="MECANO">Mécanicien</option>
-                    <option value="RESPONSABLE_SERVICE">Responsable de Service</option>
+                    <option value="RESPONSABLE_SERVICE">Personnel</option>
                   </select>
                 </div>
                 <div>

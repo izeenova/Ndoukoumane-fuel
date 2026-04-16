@@ -250,6 +250,96 @@ async function main() {
   })
   console.log('✅ Mécanicien démo conservé (MEC-001)')
 
+  // ── Assignations véhicule → chauffeur ─────────────────────────────────────
+  const ASSIGNMENTS: { immat: string; matricule: string }[] = [
+    { immat: 'AA835CM',  matricule: 'CHF-001' },
+    { immat: 'AA081DF',  matricule: 'CHF-002' },
+    { immat: 'AA735ME',  matricule: 'CHF-003' },
+    { immat: 'AA819KP',  matricule: 'CHF-004' },
+    { immat: 'AA649CZ',  matricule: 'CHF-005' },
+    { immat: 'AA523ES',  matricule: 'CHF-006' },
+    { immat: 'AA419AJ',  matricule: 'CHF-007' },
+    { immat: 'AA292KE',  matricule: 'CHF-008' },
+    { immat: 'AA445EA',  matricule: 'CHF-009' },
+    { immat: 'AA849FE',  matricule: 'CHF-010' },
+    { immat: 'DK0692BL', matricule: 'CHF-011' },
+    { immat: 'AA284DN',  matricule: 'CHF-012' },
+    { immat: 'AA434CW',  matricule: 'CHF-013' },
+    { immat: 'AA514CA',  matricule: 'CHF-014' },
+    { immat: 'AA318EM',  matricule: 'CHF-015' },
+    { immat: 'AA910FD',  matricule: 'CHF-016' },
+    { immat: 'AA689BL',  matricule: 'CHF-017' },
+    { immat: 'AA500FE',  matricule: 'CHF-018' },
+    { immat: 'AA521DS',  matricule: 'CHF-019' },
+    { immat: 'AA855ED',  matricule: 'CHF-020' },
+    { immat: 'AA741MK',  matricule: 'CHF-021' },
+    { immat: 'AA482CF',  matricule: 'CHF-022' },
+    { immat: 'DK1384BK', matricule: 'CHF-023' },
+    { immat: 'AA101DQ',  matricule: 'CHF-024' },
+    { immat: 'AA920DQ',  matricule: 'CHF-025' },
+    { immat: 'DK8728AY', matricule: 'CHF-026' },
+    { immat: 'DK5007BM', matricule: 'CHF-027' },
+    { immat: 'DK4887BM', matricule: 'CHF-028' },
+    { immat: 'AA095AL',  matricule: 'CHF-029' },
+    { immat: 'AA716DE',  matricule: 'CHF-030' },
+    { immat: 'AA987MT',  matricule: 'CHF-031' },
+    { immat: 'DK2561BE', matricule: 'CHF-032' },
+    { immat: 'DK2703BH', matricule: 'CHF-033' },
+    { immat: 'DK3494BD', matricule: 'CHF-034' },
+    { immat: 'AA357BR',  matricule: 'CHF-035' },
+    { immat: 'AA858RZ',  matricule: 'CHF-036' },
+    { immat: 'AA145FB',  matricule: 'CHF-037' },
+    { immat: 'AA689SS',  matricule: 'CHF-038' },
+    { immat: 'AB026FJ',  matricule: 'CHF-039' },
+    { immat: 'AA589MR',  matricule: 'CHF-040' },
+    { immat: 'AA380VH',  matricule: 'CHF-041' },
+    { immat: 'AA808AR',  matricule: 'CHF-042' },
+    { immat: 'AA868HD',  matricule: 'CHF-043' },
+    { immat: 'AA667ED',  matricule: 'CHF-044' },
+    { immat: 'AA664AG',  matricule: 'CHF-045' },
+    { immat: 'AA894FL',  matricule: 'CHF-046' },
+    { immat: 'AA212JT',  matricule: 'CHF-047' },
+    { immat: 'AA196TA',  matricule: 'CHF-048' },
+    { immat: 'AA691RW',  matricule: 'CHF-049' },
+    { immat: 'AA488YM',  matricule: 'CHF-050' },
+    { immat: 'AA026FY',  matricule: 'CHF-051' },
+    { immat: 'AA058VP',  matricule: 'CHF-052' },
+    { immat: 'AA236VH',  matricule: 'CHF-053' },
+    { immat: 'AA876TP',  matricule: 'CHF-054' },
+    { immat: 'AA571VL',  matricule: 'CHF-055' },
+    { immat: 'AA412LX',  matricule: 'CHF-056' },
+    { immat: 'AA662NF',  matricule: 'CHF-057' },
+    { immat: 'DK3834BH', matricule: 'CHF-058' },
+    { immat: 'AA998SX',  matricule: 'CHF-059' },
+    { immat: 'AB999FK',  matricule: 'CHF-060' },
+    { immat: 'AA270LY',  matricule: 'CHF-061' },
+    { immat: 'AA240TM',  matricule: 'CHF-062' },
+    { immat: 'AA758AK',  matricule: 'CHF-063' },
+    { immat: 'AA937PR',  matricule: 'CHF-064' },
+    { immat: 'AA958PR',  matricule: 'CHF-065' },
+    { immat: 'AA130MJ',  matricule: 'CHF-066' },
+    { immat: 'AA348EM',  matricule: 'CHF-067' },
+    { immat: 'AA102MK',  matricule: 'CHF-068' },
+    { immat: 'AA347EM',  matricule: 'CHF-069' },
+    { immat: 'AA307RP',  matricule: 'CHF-070' },
+    { immat: 'AA535TZ',  matricule: 'CHF-071' },
+    { immat: 'AA777EH',  matricule: 'CHF-072' },
+  ]
+
+  let nbAssign = 0
+  for (const a of ASSIGNMENTS) {
+    const vehicule  = await prisma.vehicule.findUnique({ where: { immatriculation: a.immat } })
+    const chauffeur = await prisma.personnel.findUnique({ where: { matricule: a.matricule } })
+    if (vehicule && chauffeur) {
+      await prisma.vehicule.update({
+        where: { id: vehicule.id },
+        data:  { personnelAssigneId: chauffeur.id },
+      })
+      nbAssign++
+    }
+  }
+  console.log(`✅ ${nbAssign} assignations véhicule → chauffeur`)
+
   console.log('\n🚀 Base de données prête !')
   console.log('   Connexion admin : admin@ndoukouman.com / Admin@2025')
 }

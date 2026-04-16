@@ -63,7 +63,7 @@ export function getRolePersonnelLabel(role: string): string {
   const labels: Record<string, string> = {
     CHAUFFEUR: 'Chauffeur',
     MECANO: 'Mécanicien',
-    RESPONSABLE_SERVICE: 'Responsable de Service',
+    RESPONSABLE_SERVICE: 'Personnel',
   }
   return labels[role] || role
 }

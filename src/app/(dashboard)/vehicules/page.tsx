@@ -15,6 +15,7 @@ interface Vehicule {
   statut: 'ACTIF' | 'EN_REPARATION' | 'HORS_SERVICE'
   notes: string | null
   alerte: { seuil: number; actif: boolean } | null
+  personnelAssigne: { id: string; prenom: string; nom: string; matricule: string | null } | null
 }
 
 const STATUT_COLORS: Record<string, string> = {
@@ -157,7 +158,7 @@ export default function VehiculesPage() {
             <thead>
               <tr className="border-b border-slate-700/50">
                 <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider">Véhicule</th>
-                <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider">Type</th>
+                <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider hidden sm:table-cell">Chauffeur</th>
                 <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider hidden md:table-cell">Niveau carburant</th>
                 <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider">Statut</th>
                 <th className="text-right px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider">Actions</th>
@@ -184,12 +185,26 @@ export default function VehiculesPage() {
                         </div>
                         <div>
                           <p className="text-white font-semibold text-sm">{v.immatriculation}</p>
-                          <p className="text-slate-500 text-xs">{v.marque} {v.modele}{v.annee ? ` · ${v.annee}` : ''}</p>
+                          <p className="text-slate-500 text-xs">{v.marque} {v.modele}{v.annee ? ` · ${v.annee}` : ''} · {getTypeVehiculeLabel(v.type)}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="text-slate-300 text-sm">{getTypeVehiculeLabel(v.type)}</span>
+                    <td className="px-5 py-4 hidden sm:table-cell">
+                      {v.personnelAssigne ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 bg-slate-700 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] font-bold text-white">
+                              {v.personnelAssigne.prenom[0]}{v.personnelAssigne.nom[0]}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-white text-sm">{v.personnelAssigne.prenom} {v.personnelAssigne.nom}</p>
+                            <p className="text-slate-500 text-xs">{v.personnelAssigne.matricule}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-slate-600 text-sm">—</span>
+                      )}
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">
                       <div className="flex items-center gap-3">

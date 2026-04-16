@@ -25,7 +25,10 @@ export async function GET(req: NextRequest) {
           role ? { role: role as 'CHAUFFEUR' | 'MECANO' | 'RESPONSABLE_SERVICE' } : {},
         ]
       },
-      orderBy: { createdAt: 'desc' },
+      include: {
+        vehiculeAssigne: { select: { immatriculation: true, marque: true, modele: true } }
+      },
+      orderBy: { nom: 'asc' },
     })
 
     return NextResponse.json(personnel)
