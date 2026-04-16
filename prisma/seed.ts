@@ -242,14 +242,6 @@ async function main() {
   }
   console.log(`✅ ${nbPersonnel} employés importés`)
 
-  // ── Mécanicien démo ───────────────────────────────────────────────────────
-  await prisma.personnel.upsert({
-    where:  { matricule: 'MEC-001' },
-    update: {},
-    create: { nom: 'Ndiaye', prenom: 'Ibrahima', role: 'MECANO', matricule: 'MEC-001' },
-  })
-  console.log('✅ Mécanicien démo conservé (MEC-001)')
-
   // ── Assignations véhicule → chauffeur ─────────────────────────────────────
   const ASSIGNMENTS: { immat: string; matricule: string }[] = [
     { immat: 'AA835CM',  matricule: 'CHF-001' },
