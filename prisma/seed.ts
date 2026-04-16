@@ -231,16 +231,16 @@ async function main() {
   console.log(`✅ ${nbVehicules} véhicules importés`)
 
   // ── Personnel ─────────────────────────────────────────────────────────────
-  let nbChauffeurs = 0
+  let nbPersonnel = 0
   for (const c of CHAUFFEURS) {
     await prisma.personnel.upsert({
       where:  { matricule: c.matricule },
-      update: { nom: c.nom, prenom: c.prenom },
-      create: { nom: c.nom, prenom: c.prenom, role: 'CHAUFFEUR', matricule: c.matricule },
+      update: { nom: c.nom, prenom: c.prenom, role: 'RESPONSABLE_SERVICE' },
+      create: { nom: c.nom, prenom: c.prenom, role: 'RESPONSABLE_SERVICE', matricule: c.matricule },
     })
-    nbChauffeurs++
+    nbPersonnel++
   }
-  console.log(`✅ ${nbChauffeurs} chauffeurs importés`)
+  console.log(`✅ ${nbPersonnel} employés importés`)
 
   // ── Mécanicien démo ───────────────────────────────────────────────────────
   await prisma.personnel.upsert({
