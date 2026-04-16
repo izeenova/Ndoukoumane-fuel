@@ -11,12 +11,15 @@ interface MobileNavProps {
   onClose: () => void
 }
 
+const canAccessStats = (role: string) => role === 'ADMIN'
+
 const navItems = [
   { href: '/dashboard', label: 'Tableau de bord', permission: () => true },
   { href: '/vehicules', label: 'Véhicules', permission: canAccessVehicules },
   { href: '/personnel', label: 'Personnel', permission: canAccessPersonnel },
   { href: '/carburant', label: 'Sorties Carburant', permission: canAccessCarburant },
   { href: '/reparations', label: 'Réparations', permission: canAccessReparations },
+  { href: '/stats', label: 'Statistiques', permission: canAccessStats },
   { href: '/alertes', label: 'Alertes', permission: canAccessAlertes },
 ]
 
