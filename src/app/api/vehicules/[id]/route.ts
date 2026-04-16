@@ -33,7 +33,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     const body = await req.json()
-    const { immatriculation, type, marque, modele, annee, capaciteReservoir, niveauActuel, statut, notes } = body
+    const { immatriculation, type, marque, modele, annee, capaciteReservoir, niveauActuel, statut, notes, periodeCarburation } = body
 
     const vehicule = await prisma.vehicule.update({
       where: { id: params.id },
@@ -47,6 +47,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         niveauActuel: parseFloat(niveauActuel || 0),
         statut,
         notes: notes?.trim() || null,
+        periodeCarburation: periodeCarburation ? parseInt(periodeCarburation) : 30,
       },
       include: { alerte: true },
     })

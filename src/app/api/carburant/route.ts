@@ -81,19 +81,46 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { vehiculeId, personnelId, litres, prixLitre, date, notes } = body
+    const { vehiculeId, litres, prixLitre, date, notes, forcer } = body
 
-    if (!vehiculeId || !personnelId || !litres || !prixLitre) {
+    if (!vehiculeId || !litres || !prixLitre) {
       return NextResponse.json({ error: 'Champs obligatoires manquants' }, { status: 400 })
+    }
+
+    // Charger le véhicule avec le dernier plein et l'employé assigné
+    const vehicule = await prisma.vehicule.findUnique({
+      where: { id: vehiculeId },
+      include: {
+        sorties: { take: 1, orderBy: { date: 'desc' }, select: { date: true } },
+      },
+    })
+    if (!vehicule) return NextResponse.json({ error: 'Véhicule introuvable' }, { status: 404 })
+
+    // Vérification de la période de carburation
+    if (!forcer && vehicule.sorties.length > 0) {
+      const lastDate = new Date(vehicule.sorties[0].date)
+      const daysSince = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
+      if (daysSince < vehicule.periodeCarburation) {
+        const joursRestants = vehicule.periodeCarburation - daysSince
+        return NextResponse.json({
+          error: `Ce véhicule a été ravitaillé il y a ${daysSince} jour(s). Prochain plein dans ${joursRestants} jour(s).`,
+          locked: true,
+          daysSince,
+          joursRestants,
+          periodeCarburation: vehicule.periodeCarburation,
+        }, { status: 409 })
+      }
+    }
+
+    // Utiliser l'employé assigné au véhicule
+    const personnelId = vehicule.personnelAssigneId
+    if (!personnelId) {
+      return NextResponse.json({ error: 'Aucun employé assigné à ce véhicule' }, { status: 400 })
     }
 
     const litresNum = parseFloat(litres)
     const prixLitreNum = parseFloat(prixLitre)
     const coutTotal = litresNum * prixLitreNum
-
-    // Vérifier la disponibilité du réservoir
-    const vehicule = await prisma.vehicule.findUnique({ where: { id: vehiculeId } })
-    if (!vehicule) return NextResponse.json({ error: 'Véhicule introuvable' }, { status: 404 })
 
     const [sortie] = await prisma.$transaction([
       prisma.sortieCarburant.create({
@@ -109,12 +136,9 @@ export async function POST(req: NextRequest) {
         },
         include: { vehicule: true, personnel: true },
       }),
-      // Déduire du niveau actuel
       prisma.vehicule.update({
         where: { id: vehiculeId },
-        data: {
-          niveauActuel: Math.max(0, vehicule.niveauActuel - litresNum),
-        },
+        data: { niveauActuel: Math.max(0, vehicule.niveauActuel - litresNum) },
       }),
     ])
 

@@ -15,10 +15,26 @@ interface Sortie {
   createdBy: { name: string }
 }
 
-interface Vehicule { id: string; immatriculation: string; marque: string; modele: string; niveauActuel: number }
-interface Personnel { id: string; nom: string; prenom: string; role: string }
+interface Vehicule {
+  id: string
+  immatriculation: string
+  marque: string
+  modele: string
+  niveauActuel: number
+  periodeCarburation: number
+  personnelAssigne: { id: string; prenom: string; nom: string } | null
+  sorties: { date: string }[]
+}
 
-const emptyForm = { vehiculeId: '', personnelId: '', litres: '', prixLitre: '650', date: '', notes: '' }
+const emptyForm = { vehiculeId: '', litres: '', prixLitre: '650', date: '', notes: '', forcer: false }
+
+function getVehiculeStatus(v: Vehicule) {
+  if (v.sorties.length === 0) return { locked: false, daysSince: null, joursRestants: 0 }
+  const daysSince = Math.floor((Date.now() - new Date(v.sorties[0].date).getTime()) / (1000 * 60 * 60 * 24))
+  const locked = daysSince < v.periodeCarburation
+  const joursRestants = v.periodeCarburation - daysSince
+  return { locked, daysSince, joursRestants }
+}
 
 // ─── Combobox recherchable ────────────────────────────────────────────────────
 function SearchableSelect({
@@ -44,7 +60,6 @@ function SearchableSelect({
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  // Fermer en cliquant dehors
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
@@ -53,7 +68,6 @@ function SearchableSelect({
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  // Réinitialiser le query quand la valeur change (ex: reset form)
   useEffect(() => {
     if (!value) setQuery('')
   }, [value])
@@ -70,7 +84,6 @@ function SearchableSelect({
         className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-sm flex items-center gap-2 cursor-pointer focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent"
         onClick={() => setOpen(true)}
       >
-        {/* Icône loupe */}
         <svg className="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
@@ -83,13 +96,11 @@ function SearchableSelect({
           className="flex-1 bg-transparent text-white placeholder-slate-500 outline-none min-w-0"
           required={required && !value}
         />
-        {/* Chevron */}
         <svg className={`w-4 h-4 text-slate-500 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </div>
 
-      {/* Dropdown */}
       {open && (
         <div className="absolute z-50 mt-1 w-full bg-[#0F172A] border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
           <div className="max-h-52 overflow-y-auto">
@@ -111,7 +122,6 @@ function SearchableSelect({
         </div>
       )}
 
-      {/* Champ caché pour la validation HTML */}
       <input type="hidden" value={value} required={required} />
     </div>
   )
@@ -120,7 +130,6 @@ function SearchableSelect({
 export default function CarburantPage() {
   const [sorties, setSorties] = useState<Sortie[]>([])
   const [vehicules, setVehicules] = useState<Vehicule[]>([])
-  const [personnels, setPersonnels] = useState<Personnel[]>([])
   const [loading, setLoading] = useState(true)
   const [totalDepenses, setTotalDepenses] = useState(0)
   const [totalLitres, setTotalLitres] = useState(0)
@@ -159,14 +168,16 @@ export default function CarburantPage() {
     setVehicules(Array.isArray(data) ? data : [])
   }
 
-  const fetchPersonnels = async () => {
-    const res = await fetch('/api/personnel')
-    const data = await res.json()
-    setPersonnels(Array.isArray(data) ? data.filter((p: any) => p.actif) : [])
-  }
-
   useEffect(() => { fetchData() }, [fetchData])
-  useEffect(() => { fetchVehicules(); fetchPersonnels() }, [])
+  useEffect(() => { fetchVehicules() }, [])
+
+  // Reset forcer when vehicule changes
+  useEffect(() => {
+    setForm(f => ({ ...f, forcer: false }))
+  }, [form.vehiculeId])
+
+  const selectedVehicule = vehicules.find(v => v.id === form.vehiculeId) || null
+  const vehiculeStatus = selectedVehicule ? getVehiculeStatus(selectedVehicule) : null
 
   const coutCalcule = form.litres && form.prixLitre
     ? (parseFloat(form.litres) * parseFloat(form.prixLitre)).toFixed(0)
@@ -177,7 +188,7 @@ export default function CarburantPage() {
     const res = await fetch('/api/carburant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ vehiculeId: form.vehiculeId, litres: form.litres, prixLitre: form.prixLitre, date: form.date, notes: form.notes, forcer: form.forcer }),
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error || 'Erreur') } else {
@@ -247,7 +258,7 @@ export default function CarburantPage() {
             type="text"
             value={searchPersonnel}
             onChange={e => { setSearchPersonnel(e.target.value); setPage(1) }}
-            placeholder="Rechercher un chauffeur, mécanicien..."
+            placeholder="Rechercher par nom du personnel..."
             className="w-full bg-[#1E293B] border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -329,17 +340,16 @@ export default function CarburantPage() {
             </tbody>
           </table>
         </div>
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-5 py-4 border-t border-slate-700/50">
             <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
               className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-sm disabled:opacity-40 hover:bg-slate-700">
-              ← Précédent
+              Précédent
             </button>
             <span className="text-slate-400 text-sm">Page {page} / {totalPages}</span>
             <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}
               className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-sm disabled:opacity-40 hover:bg-slate-700">
-              Suivant →
+              Suivant
             </button>
           </div>
         )}
@@ -359,37 +369,79 @@ export default function CarburantPage() {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 text-sm">{error}</div>}
+
               <SearchableSelect
                 label="Véhicule"
                 placeholder="Chercher une plaque, marque..."
                 value={form.vehiculeId}
                 options={vehicules}
-                onSelect={id => setForm(f => ({ ...f, vehiculeId: id }))}
+                onSelect={id => setForm(f => ({ ...f, vehiculeId: id, forcer: false }))}
                 renderSelected={v => `${v.immatriculation} — ${v.marque} ${v.modele}`}
-                renderOption={v => (
-                  <div>
-                    <span className="font-semibold">{v.immatriculation}</span>
-                    <span className="text-slate-400"> — {v.marque} {v.modele}</span>
-                    <span className="ml-2 text-orange-400 text-xs">{formatLitres(v.niveauActuel)} restant</span>
-                  </div>
-                )}
+                renderOption={v => {
+                  const st = getVehiculeStatus(v)
+                  return (
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <span className="font-semibold">{v.immatriculation}</span>
+                        <span className="text-slate-400"> — {v.marque} {v.modele}</span>
+                        <span className="ml-2 text-orange-400 text-xs">{formatLitres(v.niveauActuel)} restant</span>
+                      </div>
+                      {st.locked ? (
+                        <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 text-xs font-medium">
+                          {st.joursRestants}j restants
+                        </span>
+                      ) : (
+                        <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-xs font-medium">
+                          Disponible
+                        </span>
+                      )}
+                    </div>
+                  )
+                }}
                 required
               />
-              <SearchableSelect
-                label="Personnel"
-                placeholder="Chercher un chauffeur, mécanicien..."
-                value={form.personnelId}
-                options={personnels}
-                onSelect={id => setForm(f => ({ ...f, personnelId: id }))}
-                renderSelected={p => `${p.prenom} ${p.nom}`}
-                renderOption={p => (
-                  <div>
-                    <span className="font-semibold">{p.prenom} {p.nom}</span>
-                    <span className="text-slate-400 text-xs ml-2">{getRolePersonnelLabel(p.role)}</span>
+
+              {/* Employé assigné automatiquement */}
+              {selectedVehicule && selectedVehicule.personnelAssigne && (
+                <div className="flex items-center gap-3 bg-slate-800/60 rounded-xl px-4 py-3 border border-slate-700/50">
+                  <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-[11px] font-bold text-blue-300">
+                      {selectedVehicule.personnelAssigne.prenom[0]}{selectedVehicule.personnelAssigne.nom[0]}
+                    </span>
                   </div>
-                )}
-                required
-              />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium">{selectedVehicule.personnelAssigne.prenom} {selectedVehicule.personnelAssigne.nom}</p>
+                    <p className="text-slate-400 text-xs">Employe assigne</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Bloc verrou période */}
+              {selectedVehicule && vehiculeStatus?.locked && (
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <div>
+                      <p className="text-orange-300 text-sm font-medium">Véhicule récemment ravitaillé</p>
+                      <p className="text-orange-400/80 text-xs mt-0.5">
+                        Dernier plein il y a {vehiculeStatus.daysSince} jour(s) — prochain dans {vehiculeStatus.joursRestants} jour(s)
+                      </p>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.forcer}
+                      onChange={e => setForm(f => ({ ...f, forcer: e.target.checked }))}
+                      className="w-4 h-4 rounded accent-orange-500"
+                    />
+                    <span className="text-orange-300 text-sm">Forcer le ravitaillement (exception)</span>
+                  </label>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-slate-300 mb-1.5">Litres *</label>

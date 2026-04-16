@@ -29,7 +29,8 @@ export async function GET(req: NextRequest) {
       },
       include: {
         alerte: true,
-        personnelAssigne: { select: { id: true, prenom: true, nom: true, matricule: true } },
+        personnelAssigne: { select: { id: true, prenom: true, nom: true } },
+        sorties: { take: 1, orderBy: { date: 'desc' }, select: { date: true } },
       },
       orderBy: { immatriculation: 'asc' },
     })

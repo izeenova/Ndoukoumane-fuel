@@ -14,8 +14,10 @@ interface Vehicule {
   niveauActuel: number
   statut: 'ACTIF' | 'EN_REPARATION' | 'HORS_SERVICE'
   notes: string | null
+  periodeCarburation: number
   alerte: { seuil: number; actif: boolean } | null
   personnelAssigne: { id: string; prenom: string; nom: string; matricule: string | null } | null
+  sorties: { date: string }[]
 }
 
 const STATUT_COLORS: Record<string, string> = {
@@ -26,7 +28,15 @@ const STATUT_COLORS: Record<string, string> = {
 
 const emptyForm = {
   immatriculation: '', type: 'CAMION', marque: '', modele: '',
-  annee: '', capaciteReservoir: '', niveauActuel: '0', statut: 'ACTIF', notes: ''
+  annee: '', capaciteReservoir: '', niveauActuel: '0', statut: 'ACTIF', notes: '', periodeCarburation: '30'
+}
+
+function getVehiculeVerrou(v: Vehicule) {
+  if (!v.sorties || v.sorties.length === 0) return { locked: false, joursRestants: 0 }
+  const daysSince = Math.floor((Date.now() - new Date(v.sorties[0].date).getTime()) / (1000 * 60 * 60 * 24))
+  const locked = daysSince < v.periodeCarburation
+  const joursRestants = v.periodeCarburation - daysSince
+  return { locked, joursRestants }
 }
 
 export default function VehiculesPage() {
@@ -69,7 +79,8 @@ export default function VehiculesPage() {
       marque: v.marque, modele: v.modele, annee: v.annee?.toString() || '',
       capaciteReservoir: v.capaciteReservoir.toString(),
       niveauActuel: v.niveauActuel.toString(),
-      statut: v.statut, notes: v.notes || ''
+      statut: v.statut, notes: v.notes || '',
+      periodeCarburation: v.periodeCarburation?.toString() || '30'
     })
     setError('')
     setShowModal(true)
@@ -173,6 +184,7 @@ export default function VehiculesPage() {
                 const pct = getNiveauPourcentage(v.niveauActuel, v.capaciteReservoir)
                 const bgColor = getNiveauBgColor(pct)
                 const enAlerte = v.alerte?.actif && pct <= (v.alerte?.seuil || 20)
+                const verrou = getVehiculeVerrou(v)
 
                 return (
                   <tr key={v.id} className="hover:bg-slate-800/30 transition-colors">
@@ -217,6 +229,13 @@ export default function VehiculesPage() {
                         </div>
                         {enAlerte && (
                           <span className="text-orange-400 text-sm" title="Niveau bas">⚠</span>
+                        )}
+                        {verrou.locked && (
+                          <span title={`Plein dans ${verrou.joursRestants} jour(s)`}>
+                            <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                          </span>
                         )}
                       </div>
                     </td>
@@ -318,6 +337,12 @@ export default function VehiculesPage() {
                   <input type="number" value={form.niveauActuel} onChange={e => setForm(f => ({ ...f, niveauActuel: e.target.value }))}
                     className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="300" min="0" step="0.5" />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-300 mb-1.5">Période carburant (jours)</label>
+                  <input type="number" value={form.periodeCarburation} onChange={e => setForm(f => ({ ...f, periodeCarburation: e.target.value }))}
+                    className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="30" min="7" max="90" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm text-slate-300 mb-1.5">Notes</label>

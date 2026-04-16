@@ -213,6 +213,7 @@ async function main() {
         statut: v.statut,
         notes:  v.notes ?? undefined,
         capaciteReservoir: getCapacite(v.type, v.modele),
+        periodeCarburation: 30,
       },
       create: {
         immatriculation:   v.immatriculation,
@@ -224,6 +225,7 @@ async function main() {
         notes:             v.notes ?? undefined,
         capaciteReservoir: getCapacite(v.type, v.modele),
         niveauActuel:      0,
+        periodeCarburation: 30,
       },
     })
     nbVehicules++
