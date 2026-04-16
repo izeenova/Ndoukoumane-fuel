@@ -33,6 +33,8 @@ export default function CarburantPage() {
   const [error, setError] = useState('')
   const [dateDebut, setDateDebut] = useState('')
   const [dateFin, setDateFin] = useState('')
+  const [searchVehicule, setSearchVehicule] = useState('')
+  const [searchPersonnel, setSearchPersonnel] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
@@ -41,6 +43,8 @@ export default function CarburantPage() {
     const params = new URLSearchParams({ page: page.toString() })
     if (dateDebut) params.set('dateDebut', dateDebut)
     if (dateFin) params.set('dateFin', dateFin)
+    if (searchVehicule) params.set('searchVehicule', searchVehicule)
+    if (searchPersonnel) params.set('searchPersonnel', searchPersonnel)
     const res = await fetch(`/api/carburant?${params}`)
     const data = await res.json()
     setSorties(data.sorties || [])
@@ -50,7 +54,7 @@ export default function CarburantPage() {
     setTotalDepenses(total)
     setTotalLitres(litres)
     setLoading(false)
-  }, [page, dateDebut, dateFin])
+  }, [page, dateDebut, dateFin, searchVehicule, searchPersonnel])
 
   const fetchVehicules = async () => {
     const res = await fetch('/api/vehicules?statut=ACTIF')
@@ -124,6 +128,34 @@ export default function CarburantPage() {
         </div>
       </div>
 
+      {/* Barre de recherche */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 17H5a2 2 0 01-2-2V9a2 2 0 012-2h11l4 4v4a2 2 0 01-2 2h-1m-6 0a2 2 0 100 4 2 2 0 000-4zm6 0a2 2 0 100 4 2 2 0 000-4z" />
+          </svg>
+          <input
+            type="text"
+            value={searchVehicule}
+            onChange={e => { setSearchVehicule(e.target.value); setPage(1) }}
+            placeholder="Rechercher une plaque, marque, modèle..."
+            className="w-full bg-[#1E293B] border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <input
+            type="text"
+            value={searchPersonnel}
+            onChange={e => { setSearchPersonnel(e.target.value); setPage(1) }}
+            placeholder="Rechercher un chauffeur, mécanicien..."
+            className="w-full bg-[#1E293B] border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
       {/* Filtres date */}
       <div className="flex flex-col sm:flex-row gap-3 items-end">
         <div>
@@ -136,9 +168,12 @@ export default function CarburantPage() {
           <input type="date" value={dateFin} onChange={e => { setDateFin(e.target.value); setPage(1) }}
             className="bg-[#1E293B] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
-        {(dateDebut || dateFin) && (
-          <button onClick={() => { setDateDebut(''); setDateFin(''); setPage(1) }}
-            className="px-3 py-2.5 text-slate-400 hover:text-white text-sm rounded-xl border border-slate-700 hover:border-slate-600">
+        {(dateDebut || dateFin || searchVehicule || searchPersonnel) && (
+          <button onClick={() => { setDateDebut(''); setDateFin(''); setSearchVehicule(''); setSearchPersonnel(''); setPage(1) }}
+            className="px-3 py-2.5 text-slate-400 hover:text-white text-sm rounded-xl border border-slate-700 hover:border-slate-600 flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
             Réinitialiser
           </button>
         )}

@@ -11,6 +11,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const vehiculeId = searchParams.get('vehiculeId') || ''
     const personnelId = searchParams.get('personnelId') || ''
+    const searchVehicule = searchParams.get('searchVehicule') || ''
+    const searchPersonnel = searchParams.get('searchPersonnel') || ''
     const dateDebut = searchParams.get('dateDebut') || ''
     const dateFin = searchParams.get('dateFin') || ''
     const page = parseInt(searchParams.get('page') || '1')
@@ -19,6 +21,28 @@ export async function GET(req: NextRequest) {
     const where: any = {}
     if (vehiculeId) where.vehiculeId = vehiculeId
     if (personnelId) where.personnelId = personnelId
+
+    // Recherche par plaque ou marque/modèle du véhicule
+    if (searchVehicule) {
+      where.vehicule = {
+        OR: [
+          { immatriculation: { contains: searchVehicule, mode: 'insensitive' } },
+          { marque: { contains: searchVehicule, mode: 'insensitive' } },
+          { modele: { contains: searchVehicule, mode: 'insensitive' } },
+        ]
+      }
+    }
+
+    // Recherche par nom ou prénom du chauffeur
+    if (searchPersonnel) {
+      where.personnel = {
+        OR: [
+          { nom: { contains: searchPersonnel, mode: 'insensitive' } },
+          { prenom: { contains: searchPersonnel, mode: 'insensitive' } },
+        ]
+      }
+    }
+
     if (dateDebut || dateFin) {
       where.date = {}
       if (dateDebut) where.date.gte = new Date(dateDebut)
