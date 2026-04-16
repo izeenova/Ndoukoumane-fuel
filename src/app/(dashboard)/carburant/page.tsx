@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { formatCFA, formatLitres, formatDateTime } from '@/lib/utils'
 
 interface Sortie {
@@ -19,6 +19,103 @@ interface Vehicule { id: string; immatriculation: string; marque: string; modele
 interface Personnel { id: string; nom: string; prenom: string; role: string }
 
 const emptyForm = { vehiculeId: '', personnelId: '', litres: '', prixLitre: '650', date: '', notes: '' }
+
+// ─── Combobox recherchable ────────────────────────────────────────────────────
+function SearchableSelect({
+  label,
+  placeholder,
+  value,
+  options,
+  onSelect,
+  renderOption,
+  renderSelected,
+  required,
+}: {
+  label: string
+  placeholder: string
+  value: string
+  options: any[]
+  onSelect: (id: string) => void
+  renderOption: (item: any) => React.ReactNode
+  renderSelected: (item: any) => string
+  required?: boolean
+}) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // Fermer en cliquant dehors
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // Réinitialiser le query quand la valeur change (ex: reset form)
+  useEffect(() => {
+    if (!value) setQuery('')
+  }, [value])
+
+  const selected = options.find(o => o.id === value)
+  const filtered = query
+    ? options.filter(o => renderSelected(o).toLowerCase().includes(query.toLowerCase()))
+    : options
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="block text-sm text-slate-300 mb-1.5">{label} {required && '*'}</label>
+      <div
+        className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-sm flex items-center gap-2 cursor-pointer focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent"
+        onClick={() => setOpen(true)}
+      >
+        {/* Icône loupe */}
+        <svg className="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          type="text"
+          value={open ? query : (selected ? renderSelected(selected) : '')}
+          onChange={e => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={() => { setQuery(''); setOpen(true) }}
+          placeholder={selected ? renderSelected(selected) : placeholder}
+          className="flex-1 bg-transparent text-white placeholder-slate-500 outline-none min-w-0"
+          required={required && !value}
+        />
+        {/* Chevron */}
+        <svg className={`w-4 h-4 text-slate-500 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-[#0F172A] border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
+          <div className="max-h-52 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <p className="text-slate-500 text-sm text-center py-4">Aucun résultat</p>
+            ) : filtered.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => { onSelect(item.id); setQuery(''); setOpen(false) }}
+                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-800 transition-colors ${
+                  value === item.id ? 'bg-blue-600/20 text-blue-300' : 'text-white'
+                }`}
+              >
+                {renderOption(item)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Champ caché pour la validation HTML */}
+      <input type="hidden" value={value} required={required} />
+    </div>
+  )
+}
 
 export default function CarburantPage() {
   const [sorties, setSorties] = useState<Sortie[]>([])
@@ -262,26 +359,37 @@ export default function CarburantPage() {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 text-sm">{error}</div>}
-              <div>
-                <label className="block text-sm text-slate-300 mb-1.5">Véhicule *</label>
-                <select value={form.vehiculeId} onChange={e => setForm(f => ({ ...f, vehiculeId: e.target.value }))}
-                  className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                  <option value="">Sélectionner un véhicule</option>
-                  {vehicules.map(v => (
-                    <option key={v.id} value={v.id}>{v.immatriculation} — {v.marque} {v.modele} ({formatLitres(v.niveauActuel)} restant)</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-slate-300 mb-1.5">Personnel *</label>
-                <select value={form.personnelId} onChange={e => setForm(f => ({ ...f, personnelId: e.target.value }))}
-                  className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                  <option value="">Sélectionner un membre</option>
-                  {personnels.map(p => (
-                    <option key={p.id} value={p.id}>{p.prenom} {p.nom} — {getRolePersonnelLabel(p.role)}</option>
-                  ))}
-                </select>
-              </div>
+              <SearchableSelect
+                label="Véhicule"
+                placeholder="Chercher une plaque, marque..."
+                value={form.vehiculeId}
+                options={vehicules}
+                onSelect={id => setForm(f => ({ ...f, vehiculeId: id }))}
+                renderSelected={v => `${v.immatriculation} — ${v.marque} ${v.modele}`}
+                renderOption={v => (
+                  <div>
+                    <span className="font-semibold">{v.immatriculation}</span>
+                    <span className="text-slate-400"> — {v.marque} {v.modele}</span>
+                    <span className="ml-2 text-orange-400 text-xs">{formatLitres(v.niveauActuel)} restant</span>
+                  </div>
+                )}
+                required
+              />
+              <SearchableSelect
+                label="Personnel"
+                placeholder="Chercher un chauffeur, mécanicien..."
+                value={form.personnelId}
+                options={personnels}
+                onSelect={id => setForm(f => ({ ...f, personnelId: id }))}
+                renderSelected={p => `${p.prenom} ${p.nom}`}
+                renderOption={p => (
+                  <div>
+                    <span className="font-semibold">{p.prenom} {p.nom}</span>
+                    <span className="text-slate-400 text-xs ml-2">{getRolePersonnelLabel(p.role)}</span>
+                  </div>
+                )}
+                required
+              />
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-slate-300 mb-1.5">Litres *</label>
