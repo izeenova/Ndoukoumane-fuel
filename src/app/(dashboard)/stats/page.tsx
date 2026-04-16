@@ -30,7 +30,11 @@ const PERIODES: { value: Periode; label: string }[] = [
   { value: 'tout', label: 'Tout' },
 ]
 
-const MEDALS = ['🥇', '🥈', '🥉']
+const RANK_COLORS = [
+  { bg: 'bg-yellow-400/10', text: 'text-yellow-400', border: 'border-yellow-400/30' },
+  { bg: 'bg-slate-400/10', text: 'text-slate-300', border: 'border-slate-400/30' },
+  { bg: 'bg-orange-400/10', text: 'text-orange-400', border: 'border-orange-400/30' },
+]
 
 export default function StatsPage() {
   const [periode, setPeriode] = useState<Periode>('mois')
@@ -94,8 +98,12 @@ export default function StatsPage() {
         <div className="space-y-6">
           {/* ─── Classement Chauffeurs ─────────────────────────────────────── */}
           <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-700/50 flex items-center gap-2">
-              <span className="text-lg">🏆</span>
+            <div className="px-5 py-4 border-b border-slate-700/50 flex items-center gap-3">
+              <div className="w-8 h-8 bg-yellow-400/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 4v2a4 4 0 01-8 0V4M6 4H4a2 2 0 00-2 2v1c0 3.314 2.686 6 6 6h4c3.314 0 6-2.686 6-6V6a2 2 0 00-2-2h-2M12 14v7m-4 0h8" />
+                </svg>
+              </div>
               <div>
                 <h3 className="text-white font-semibold text-sm">Classement des chauffeurs</h3>
                 <p className="text-slate-500 text-xs">Par litres consommés</p>
@@ -114,9 +122,11 @@ export default function StatsPage() {
                     <div key={i} className="px-5 py-4">
                       <div className="flex items-center gap-4">
                         {/* Rang */}
-                        <div className="w-8 text-center flex-shrink-0">
+                        <div className="w-8 flex justify-center flex-shrink-0">
                           {i < 3 ? (
-                            <span className="text-xl">{MEDALS[i]}</span>
+                            <span className={`w-7 h-7 rounded-full border flex items-center justify-center text-xs font-bold ${RANK_COLORS[i].bg} ${RANK_COLORS[i].text} ${RANK_COLORS[i].border}`}>
+                              {i + 1}
+                            </span>
                           ) : (
                             <span className="text-slate-500 font-bold text-sm">#{i + 1}</span>
                           )}
@@ -165,8 +175,12 @@ export default function StatsPage() {
 
           {/* ─── Coût total par véhicule ───────────────────────────────────── */}
           <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-700/50 flex items-center gap-2">
-              <span className="text-lg">🚗</span>
+            <div className="px-5 py-4 border-b border-slate-700/50 flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 17H5a2 2 0 01-2-2V9a2 2 0 012-2h11l4 4v4a2 2 0 01-2 2h-1m-6 0a2 2 0 100 4 2 2 0 000-4zm6 0a2 2 0 100 4 2 2 0 000-4z" />
+                </svg>
+              </div>
               <div>
                 <h3 className="text-white font-semibold text-sm">Coût total par véhicule</h3>
                 <p className="text-slate-500 text-xs">Carburant + réparations cumulés</p>
