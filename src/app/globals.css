@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --navy-950: #0A0F1E;
+  --navy-900: #0F172A;
+  --navy-800: #1E293B;
+  --navy-700: #334155;
+  --fuel-blue: #3B82F6;
+  --fuel-orange: #F97316;
+  --fuel-green: #22C55E;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--navy-900);
+  color: #F8FAFC;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar personnalisée */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1E293B;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Transitions globales */
+* {
+  transition-property: color, background-color, border-color, opacity;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid var(--fuel-blue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Sélection de texte */
+::selection {
+  background-color: rgba(59, 130, 246, 0.3);
+  color: #F8FAFC;
+}
+
+/* Table styles */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* Animation pour les modals */
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-animate {
+  animation: modalIn 0.2s ease-out forwards;
+}
+
+/* Barre de progression carburant */
+@keyframes fillProgress {
+  from { width: 0%; }
+}
+
+.progress-fill {
+  animation: fillProgress 0.8s ease-out forwards;
+}

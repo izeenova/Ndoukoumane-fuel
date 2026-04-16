@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+}
+
+// ─── Utilisateurs système (3 rôles) ───────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      RoleUser @default(CARBURANT)
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sortiesCreees    SortieCarburant[] @relation("SortieCreatedBy")
+  reparationsCreees Reparation[]     @relation("ReparationCreatedBy")
+}
+
+enum RoleUser {
+  ADMIN      // Responsable principal
+  CARBURANT  // Gestionnaire sorties carburant
+  REPARATION // Gestionnaire réparations
+}
+
+// ─── Véhicules ────────────────────────────────────────────────────────────────
+
+model Vehicule {
+  id                String         @id @default(cuid())
+  immatriculation   String         @unique
+  type              TypeVehicule
+  marque            String
+  modele            String
+  annee             Int?
+  capaciteReservoir Float          // en litres
+  niveauActuel      Float          @default(0) // en litres
+  statut            StatutVehicule @default(ACTIF)
+  notes             String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  sorties     SortieCarburant[]
+  reparations Reparation[]
+  alerte      AlerteCarburant?
+}
+
+enum TypeVehicule {
+  CAMION
+  VOITURE
+}
+
+enum StatutVehicule {
+  ACTIF
+  EN_REPARATION
+  HORS_SERVICE
+}
+
+// ─── Personnel ────────────────────────────────────────────────────────────────
+
+model Personnel {
+  id         String          @id @default(cuid())
+  nom        String
+  prenom     String
+  role       RolePersonnel
+  telephone  String?
+  matricule  String?         @unique
+  actif      Boolean         @default(true)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  sorties     SortieCarburant[]
+  reparations Reparation[]
+}
+
+enum RolePersonnel {
+  CHAUFFEUR
+  MECANO
+  RESPONSABLE_SERVICE
+}
+
+// ─── Sorties Carburant ────────────────────────────────────────────────────────
+
+model SortieCarburant {
+  id          String    @id @default(cuid())
+  vehicule    Vehicule  @relation(fields: [vehiculeId], references: [id])
+  vehiculeId  String
+  personnel   Personnel @relation(fields: [personnelId], references: [id])
+  personnelId String
+  litres      Float
+  prixLitre   Float     // prix par litre en FCFA
+  coutTotal   Float     // total en FCFA
+  date        DateTime  @default(now())
+  notes       String?
+  createdBy   User      @relation("SortieCreatedBy", fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─── Réparations ─────────────────────────────────────────────────────────────
+
+model Reparation {
+  id          String     @id @default(cuid())
+  vehicule    Vehicule   @relation(fields: [vehiculeId], references: [id])
+  vehiculeId  String
+  personnel   Personnel? @relation(fields: [personnelId], references: [id])
+  personnelId String?
+  description String
+  cout        Float      // coût total en FCFA
+  date        DateTime   @default(now())
+  pieces      String?    // pièces remplacées
+  notes       String?
+  createdBy   User       @relation("ReparationCreatedBy", fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+// ─── Alertes Carburant ────────────────────────────────────────────────────────
+
+model AlerteCarburant {
+  id         String   @id @default(cuid())
+  vehicule   Vehicule @relation(fields: [vehiculeId], references: [id])
+  vehiculeId String   @unique
+  seuil      Float    @default(20) // pourcentage minimum avant alerte
+  actif      Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

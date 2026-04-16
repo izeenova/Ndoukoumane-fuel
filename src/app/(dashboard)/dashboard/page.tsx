@@ -1,0 +1,273 @@
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { formatCFA, formatLitres, formatDate, getNiveauPourcentage, getNiveauBgColor } from '@/lib/utils'
+import { StatCard } from '@/components/dashboard/StatCard'
+import { DashboardCharts } from '@/components/dashboard/DashboardCharts'
+
+async function getDashboardData() {
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+
+  const [
+    totalSortiesMois,
+    totalSortiesMoisPrecedent,
+    totalReparationsMois,
+    vehiculesActifs,
+    alertesActives,
+    recentSorties,
+    vehiculesAlerte,
+    monthlyData,
+  ] = await Promise.all([
+    // Total carburant ce mois
+    prisma.sortieCarburant.aggregate({
+      where: { date: { gte: startOfMonth } },
+      _sum: { coutTotal: true, litres: true },
+      _count: true,
+    }),
+    // Total mois précédent
+    prisma.sortieCarburant.aggregate({
+      where: { date: { gte: startOfLastMonth, lte: endOfLastMonth } },
+      _sum: { coutTotal: true },
+    }),
+    // Total réparations ce mois
+    prisma.reparation.aggregate({
+      where: { date: { gte: startOfMonth } },
+      _sum: { cout: true },
+    }),
+    // Véhicules actifs
+    prisma.vehicule.count({ where: { statut: 'ACTIF' } }),
+    // Alertes carburant
+    prisma.vehicule.findMany({
+      where: {
+        statut: 'ACTIF',
+        alerte: { actif: true },
+      },
+      include: { alerte: true },
+    }),
+    // 5 dernières sorties
+    prisma.sortieCarburant.findMany({
+      take: 5,
+      orderBy: { date: 'desc' },
+      include: {
+        vehicule: true,
+        personnel: true,
+      },
+    }),
+    // Véhicules avec niveau bas
+    prisma.vehicule.findMany({
+      where: { statut: 'ACTIF' },
+      include: { alerte: true },
+      orderBy: { niveauActuel: 'asc' },
+      take: 5,
+    }),
+    // Données 6 derniers mois
+    Promise.all(
+      Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+        const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0)
+        return prisma.sortieCarburant.aggregate({
+          where: { date: { gte: d, lte: end } },
+          _sum: { coutTotal: true, litres: true },
+        }).then(res => ({
+          mois: d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }),
+          depenses: res._sum.coutTotal || 0,
+          litres: res._sum.litres || 0,
+        }))
+      })
+    ),
+  ])
+
+  const alertesCarburant = alertesActives.filter(v => {
+    if (!v.alerte) return false
+    const pct = getNiveauPourcentage(v.niveauActuel, v.capaciteReservoir)
+    return pct <= v.alerte.seuil
+  })
+
+  const tendanceMois = totalSortiesMoisPrecedent._sum.coutTotal
+    ? Math.round(
+        ((totalSortiesMois._sum.coutTotal || 0) - (totalSortiesMoisPrecedent._sum.coutTotal || 0)) /
+          (totalSortiesMoisPrecedent._sum.coutTotal || 1) * 100
+      )
+    : 0
+
+  return {
+    totalDepenses: totalSortiesMois._sum.coutTotal || 0,
+    totalLitres: totalSortiesMois._sum.litres || 0,
+    nombreSorties: totalSortiesMois._count || 0,
+    totalReparations: totalReparationsMois._sum.cout || 0,
+    vehiculesActifs,
+    nombreAlertes: alertesCarburant.length,
+    recentSorties,
+    vehiculesAlerte: vehiculesAlerte.slice(0, 4),
+    monthlyData: monthlyData.reverse(),
+    tendanceMois,
+  }
+}
+
+export default async function DashboardPage() {
+  const session = await getServerSession(authOptions)
+  const data = await getDashboardData()
+
+  return (
+    <div className="space-y-6">
+      {/* En-tête */}
+      <div>
+        <h2 className="text-xl font-bold text-white">
+          Bonjour, {session?.user?.name?.split(' ')[0]} 👋
+        </h2>
+        <p className="text-slate-400 text-sm mt-0.5">
+          Voici le résumé de votre flotte pour ce mois
+        </p>
+      </div>
+
+      {/* Cartes statistiques */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <StatCard
+          title="Dépenses carburant"
+          value={formatCFA(data.totalDepenses)}
+          subtitle={`${data.nombreSorties} sorties ce mois`}
+          color="blue"
+          trend={data.tendanceMois !== 0 ? { value: data.tendanceMois, label: 'vs mois dernier' } : undefined}
+          icon={
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
+        />
+        <StatCard
+          title="Litres consommés"
+          value={formatLitres(data.totalLitres)}
+          subtitle="Ce mois"
+          color="orange"
+          icon={
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+            </svg>
+          }
+        />
+        <StatCard
+          title="Véhicules actifs"
+          value={String(data.vehiculesActifs)}
+          subtitle="Dans la flotte"
+          color="green"
+          icon={
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 17H5a2 2 0 01-2-2V9a2 2 0 012-2h11l4 4v4a2 2 0 01-2 2h-1m-6 0a2 2 0 100 4 2 2 0 000-4zm6 0a2 2 0 100 4 2 2 0 000-4z" />
+            </svg>
+          }
+        />
+        <StatCard
+          title="Alertes carburant"
+          value={String(data.nombreAlertes)}
+          subtitle="Véhicules niveau bas"
+          color={data.nombreAlertes > 0 ? 'red' : 'green'}
+          icon={
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          }
+        />
+      </div>
+
+      {/* Graphiques */}
+      <DashboardCharts monthlyData={data.monthlyData} />
+
+      {/* Dernières sorties + Véhicules niveau bas */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Dernières sorties */}
+        <div className="bg-[#1E293B] rounded-xl border border-slate-700/50">
+          <div className="px-5 py-4 border-b border-slate-700/50 flex items-center justify-between">
+            <h3 className="text-white font-semibold text-sm">Dernières sorties carburant</h3>
+            <a href="/carburant" className="text-blue-400 text-xs hover:text-blue-300">Voir tout →</a>
+          </div>
+          <div className="divide-y divide-slate-800/60">
+            {data.recentSorties.length === 0 ? (
+              <p className="text-slate-500 text-sm text-center py-8">Aucune sortie enregistrée</p>
+            ) : (
+              data.recentSorties.map((sortie) => (
+                <div key={sortie.id} className="px-5 py-3.5 flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{sortie.vehicule.immatriculation}</p>
+                      <p className="text-slate-500 text-xs">{sortie.personnel.prenom} {sortie.personnel.nom} · {formatDate(sortie.date)}</p>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-3">
+                    <p className="text-white text-sm font-semibold">{formatCFA(sortie.coutTotal)}</p>
+                    <p className="text-slate-500 text-xs">{formatLitres(sortie.litres)}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Niveaux véhicules */}
+        <div className="bg-[#1E293B] rounded-xl border border-slate-700/50">
+          <div className="px-5 py-4 border-b border-slate-700/50 flex items-center justify-between">
+            <h3 className="text-white font-semibold text-sm">Niveaux carburant véhicules</h3>
+            <a href="/vehicules" className="text-blue-400 text-xs hover:text-blue-300">Voir tout →</a>
+          </div>
+          <div className="px-5 py-4 space-y-4">
+            {data.vehiculesAlerte.length === 0 ? (
+              <p className="text-slate-500 text-sm text-center py-4">Aucun véhicule</p>
+            ) : (
+              data.vehiculesAlerte.map((vehicule) => {
+                const pct = getNiveauPourcentage(vehicule.niveauActuel, vehicule.capaciteReservoir)
+                const bgColor = getNiveauBgColor(pct)
+                const seuil = vehicule.alerte?.seuil || 20
+                const enAlerte = vehicule.alerte?.actif && pct <= seuil
+
+                return (
+                  <div key={vehicule.id}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white text-sm font-medium">{vehicule.immatriculation}</span>
+                        {enAlerte && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-[10px] font-medium">
+                            ⚠ Bas
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-slate-400 text-xs">
+                        {formatLitres(vehicule.niveauActuel)} / {formatLitres(vehicule.capaciteReservoir)}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${bgColor} progress-fill`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <p className="text-slate-600 text-xs mt-1">{pct}% · {vehicule.marque} {vehicule.modele}</p>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Réparations ce mois */}
+      {data.totalReparations > 0 && (
+        <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-slate-400 text-sm">Coût total réparations ce mois</p>
+              <p className="text-2xl font-bold text-white mt-1">{formatCFA(data.totalReparations)}</p>
+            </div>
+            <a href="/reparations" className="text-blue-400 text-sm hover:text-blue-300">Voir les réparations →</a>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
