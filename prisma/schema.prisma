@@ -138,3 +138,9 @@ model AlerteCarburant {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
+
+model Parametre {
+  cle       String   @id
+  valeur    String
+  updatedAt DateTime @updatedAt
+}

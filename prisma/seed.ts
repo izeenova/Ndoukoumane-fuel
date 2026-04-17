@@ -334,6 +334,13 @@ async function main() {
   }
   console.log(`✅ ${nbAssign} assignations véhicule → chauffeur`)
 
+  await prisma.parametre.upsert({
+    where:  { cle: 'PRIX_CARBURANT' },
+    update: {},
+    create: { cle: 'PRIX_CARBURANT', valeur: '650' },
+  })
+  console.log('✅ Prix carburant par défaut : 650 FCFA/L')
+
   console.log('\n🚀 Base de données prête !')
   console.log('   Connexion admin : admin@ndoukouman.com / Admin@2025')
 }

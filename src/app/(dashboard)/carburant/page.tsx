@@ -28,6 +28,8 @@ interface Vehicule {
 
 const emptyForm = { vehiculeId: '', litres: '', prixLitre: '650', date: '', notes: '', forcer: false }
 
+
+
 function getVehiculeStatus(v: Vehicule) {
   if (v.sorties.length === 0) return { locked: false, daysSince: null, joursRestants: 0 }
   const daysSince = Math.floor((Date.now() - new Date(v.sorties[0].date).getTime()) / (1000 * 60 * 60 * 24))
@@ -143,6 +145,10 @@ export default function CarburantPage() {
   const [searchPersonnel, setSearchPersonnel] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [prixGlobal, setPrixGlobal] = useState('650')
+  const [editingPrix, setEditingPrix] = useState(false)
+  const [newPrix, setNewPrix] = useState('')
+  const [userRole, setUserRole] = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -168,8 +174,33 @@ export default function CarburantPage() {
     setVehicules(Array.isArray(data) ? data : [])
   }
 
+  const fetchPrix = async () => {
+    const res = await fetch('/api/parametres')
+    const data = await res.json()
+    setPrixGlobal(data.prixCarburant || '650')
+    setForm(f => ({ ...f, prixLitre: data.prixCarburant || '650' }))
+  }
+
+  const fetchSession = async () => {
+    const res = await fetch('/api/auth/session')
+    const data = await res.json()
+    setUserRole(data?.user?.role || '')
+  }
+
+  const handlePrixUpdate = async () => {
+    if (!newPrix || isNaN(parseFloat(newPrix))) return
+    await fetch('/api/parametres', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prixCarburant: newPrix }),
+    })
+    setPrixGlobal(newPrix)
+    setEditingPrix(false)
+    setNewPrix('')
+  }
+
   useEffect(() => { fetchData() }, [fetchData])
-  useEffect(() => { fetchVehicules() }, [])
+  useEffect(() => { fetchVehicules(); fetchPrix(); fetchSession() }, [])
 
   // Reset forcer when vehicule changes
   useEffect(() => {
@@ -215,13 +246,45 @@ export default function CarburantPage() {
           <h2 className="text-xl font-bold text-white">Sorties Carburant</h2>
           <p className="text-slate-400 text-sm">{sorties.length} sortie{sorties.length !== 1 ? 's' : ''} affichée{sorties.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={() => { setForm(emptyForm); setError(''); setShowModal(true) }}
-          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          Nouvelle sortie
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 bg-[#1E293B] border border-slate-700/50 rounded-xl px-4 py-3">
+            <div>
+              <p className="text-slate-400 text-xs">Prix carburant</p>
+              {editingPrix ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type="number"
+                    value={newPrix}
+                    onChange={e => setNewPrix(e.target.value)}
+                    className="w-24 bg-[#0F172A] border border-slate-700 rounded-lg px-2 py-1 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={prixGlobal}
+                    autoFocus
+                  />
+                  <button onClick={handlePrixUpdate} className="text-green-400 hover:text-green-300 text-xs font-medium">Valider</button>
+                  <button onClick={() => setEditingPrix(false)} className="text-slate-500 hover:text-white text-xs">Annuler</button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-white font-bold text-sm">{parseInt(prixGlobal).toLocaleString('fr-FR')} FCFA/L</p>
+                  {userRole === 'ADMIN' && (
+                    <button onClick={() => { setNewPrix(prixGlobal); setEditingPrix(true) }} className="text-slate-500 hover:text-blue-400 transition-colors">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          <button onClick={() => { setForm(f => ({ ...emptyForm, prixLitre: prixGlobal })); setError(''); setShowModal(true) }}
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Nouvelle sortie
+          </button>
+        </div>
       </div>
 
       {/* Résumé période */}
@@ -285,6 +348,28 @@ export default function CarburantPage() {
             Réinitialiser
           </button>
         )}
+      </div>
+
+      {/* Export */}
+      <div className="flex items-center gap-2">
+        <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">Export</span>
+        {[
+          { label: 'Aujourd\'hui', value: 'jour' },
+          { label: 'Cette semaine', value: 'semaine' },
+          { label: 'Ce mois', value: 'mois' },
+        ].map(p => (
+          <a
+            key={p.value}
+            href={`/api/export/carburant?periode=${p.value}`}
+            download
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600/10 hover:bg-green-600/20 border border-green-600/30 text-green-400 hover:text-green-300 rounded-lg text-xs font-medium transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            {p.label}
+          </a>
+        ))}
       </div>
 
       {/* Table */}
@@ -450,10 +535,13 @@ export default function CarburantPage() {
                     placeholder="50" required min="1" step="0.5" />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-300 mb-1.5">Prix/litre (FCFA) *</label>
-                  <input type="number" value={form.prixLitre} onChange={e => setForm(f => ({ ...f, prixLitre: e.target.value }))}
-                    className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="650" required min="1" />
+                  <label className="block text-sm text-slate-300 mb-1.5">Prix/litre (FCFA)</label>
+                  <input
+                    type="number"
+                    value={form.prixLitre}
+                    readOnly
+                    className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-slate-400 text-sm opacity-60 cursor-not-allowed"
+                  />
                 </div>
               </div>
               {form.litres && form.prixLitre && (
