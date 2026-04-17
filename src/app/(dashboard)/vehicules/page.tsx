@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { formatLitres, getNiveauPourcentage, getNiveauBgColor, getStatutVehiculeLabel, getTypeVehiculeLabel } from '@/lib/utils'
+import { getStatutVehiculeLabel, getTypeVehiculeLabel } from '@/lib/utils'
 
 interface Vehicule {
   id: string
@@ -170,20 +170,16 @@ export default function VehiculesPage() {
               <tr className="border-b border-slate-700/50">
                 <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider">Véhicule</th>
                 <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider hidden sm:table-cell">Chauffeur</th>
-                <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider hidden md:table-cell">Niveau carburant</th>
                 <th className="text-left px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider">Statut</th>
                 <th className="text-right px-5 py-3.5 text-slate-400 text-xs font-semibold uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {loading ? (
-                <tr><td colSpan={5} className="text-center py-12 text-slate-500 text-sm">Chargement...</td></tr>
+                <tr><td colSpan={4} className="text-center py-12 text-slate-500 text-sm">Chargement...</td></tr>
               ) : vehicules.length === 0 ? (
-                <tr><td colSpan={5} className="text-center py-12 text-slate-500 text-sm">Aucun véhicule trouvé</td></tr>
+                <tr><td colSpan={4} className="text-center py-12 text-slate-500 text-sm">Aucun véhicule trouvé</td></tr>
               ) : vehicules.map(v => {
-                const pct = getNiveauPourcentage(v.niveauActuel, v.capaciteReservoir)
-                const bgColor = getNiveauBgColor(pct)
-                const enAlerte = v.alerte?.actif && pct <= (v.alerte?.seuil || 20)
                 const verrou = getVehiculeVerrou(v)
 
                 return (
@@ -218,18 +214,11 @@ export default function VehiculesPage() {
                         <span className="text-slate-600 text-sm">—</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 hidden md:table-cell">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden w-24">
-                          <div className={`h-full rounded-full ${bgColor}`} style={{ width: `${pct}%` }} />
-                        </div>
-                        <div className="text-right">
-                          <p className="text-white text-xs font-medium">{pct}%</p>
-                          <p className="text-slate-500 text-[10px]">{formatLitres(v.niveauActuel)}</p>
-                        </div>
-                        {enAlerte && (
-                          <span className="text-orange-400 text-sm" title="Niveau bas">⚠</span>
-                        )}
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${STATUT_COLORS[v.statut]}`}>
+                          {getStatutVehiculeLabel(v.statut)}
+                        </span>
                         {verrou.locked && (
                           <span title={`Plein dans ${verrou.joursRestants} jour(s)`}>
                             <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -238,11 +227,6 @@ export default function VehiculesPage() {
                           </span>
                         )}
                       </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${STATUT_COLORS[v.statut]}`}>
-                        {getStatutVehiculeLabel(v.statut)}
-                      </span>
                     </td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
