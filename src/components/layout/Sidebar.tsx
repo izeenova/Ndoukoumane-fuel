@@ -120,7 +120,7 @@ export function Sidebar({ user }: SidebarProps) {
             </svg>
           </div>
           <div>
-            <p className="text-white font-bold text-sm leading-tight">Ndoukouman</p>
+            <p className="text-white font-bold text-sm leading-tight">NDOUKOUMANE</p>
             <p className="text-blue-400 text-xs font-medium">Fuel Manager</p>
           </div>
         </div>

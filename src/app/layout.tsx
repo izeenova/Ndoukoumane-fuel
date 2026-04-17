@@ -3,7 +3,7 @@ import './globals.css'
 import { Providers } from './providers'
 
 export const metadata: Metadata = {
-  title: 'Ndoukouman-Fuel | Gestion du Carburant',
+  title: 'NDOUKOUMANE | Gestion du Carburant',
   description: 'Système de gestion et monitoring du carburant pour holding de transit',
   icons: {
     icon: '/favicon.ico',

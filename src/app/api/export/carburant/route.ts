@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="Ndoukouman_Carburant_${labelPeriode}.xlsx"`,
+        'Content-Disposition': `attachment; filename="NDOUKOUMANE_Carburant_${labelPeriode}.xlsx"`,
       },
     })
   } catch (error) {

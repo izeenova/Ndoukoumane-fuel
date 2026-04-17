@@ -28,7 +28,7 @@ export function Header({ user, onMenuToggle }: HeaderProps) {
   const pathname = usePathname()
   const currentTitle = Object.entries(pageTitles).find(([key]) =>
     pathname.startsWith(key)
-  )?.[1] || 'Ndoukouman-Fuel'
+  )?.[1] || 'NDOUKOUMANE'
 
   const initials = user.name
     .split(' ')

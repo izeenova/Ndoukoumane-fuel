@@ -51,7 +51,7 @@ export default function LoginPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l2 2v4" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Ndoukouman-Fuel</h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">NDOUKOUMANE</h1>
           <p className="text-slate-400 mt-1.5 text-sm">Système de gestion du carburant</p>
         </div>
 
@@ -142,7 +142,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-slate-600 text-xs mt-6">
-          © 2025 Ndoukouman-Fuel · Tous droits réservés
+          © 2025 NDOUKOUMANE · Tous droits réservés
         </p>
       </div>
     </div>
