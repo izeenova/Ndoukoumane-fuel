@@ -20,6 +20,7 @@ async function getDashboardData() {
     recentSorties,
     vehiculesAlerte,
     monthlyData,
+    budget,
   ] = await Promise.all([
     // Total carburant ce mois
     prisma.sortieCarburant.aggregate({
@@ -78,6 +79,8 @@ async function getDashboardData() {
         }))
       })
     ),
+    // Budget carte essence
+    prisma.budgetCarburant.findFirst(),
   ])
 
   const alertesCarburant = alertesActives.filter(v => {
@@ -104,6 +107,11 @@ async function getDashboardData() {
     vehiculesAlerte: vehiculesAlerte.slice(0, 4),
     monthlyData: monthlyData.reverse(),
     tendanceMois,
+    budget: budget ? {
+      solde: budget.solde,
+      seuilAlerte: budget.seuilAlerte,
+      enAlerte: budget.solde <= budget.seuilAlerte,
+    } : null,
   }
 }
 
@@ -122,6 +130,60 @@ export default async function DashboardPage() {
           Voici le résumé de votre flotte pour ce mois
         </p>
       </div>
+
+      {/* Budget carte essence */}
+      {data.budget && (
+        <a href="/alertes" className="block">
+          <div className={`rounded-xl border p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-opacity hover:opacity-90 ${
+            data.budget.enAlerte
+              ? 'bg-red-500/10 border-red-500/40'
+              : data.budget.solde <= data.budget.seuilAlerte * 2
+              ? 'bg-orange-500/10 border-orange-500/30'
+              : 'bg-[#1E293B] border-slate-700/50'
+          }`}>
+            <div className="flex items-center gap-4">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                data.budget.enAlerte ? 'bg-red-500/20' : 'bg-green-500/10'
+              }`}>
+                <svg className={`w-5 h-5 ${data.budget.enAlerte ? 'text-red-400' : 'text-green-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Budget carte essence</p>
+                <p className={`text-2xl font-bold mt-0.5 ${
+                  data.budget.enAlerte ? 'text-red-400'
+                  : data.budget.solde <= data.budget.seuilAlerte * 2 ? 'text-orange-400'
+                  : 'text-white'
+                }`}>
+                  {formatCFA(data.budget.solde)}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 sm:text-right">
+              <div>
+                <p className="text-slate-500 text-xs">Seuil d'alerte</p>
+                <p className="text-slate-300 text-sm font-semibold">{formatCFA(data.budget.seuilAlerte)}</p>
+              </div>
+              {data.budget.enAlerte ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-semibold border border-red-500/30">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  Recharge requise
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 text-xs font-semibold border border-green-500/20">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Solde OK
+                </span>
+              )}
+            </div>
+          </div>
+        </a>
+      )}
 
       {/* Cartes statistiques */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
