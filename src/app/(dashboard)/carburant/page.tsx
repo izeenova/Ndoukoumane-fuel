@@ -149,6 +149,8 @@ export default function CarburantPage() {
   const [editingPrix, setEditingPrix] = useState(false)
   const [newPrix, setNewPrix] = useState('')
   const [userRole, setUserRole] = useState('')
+  const [budgetSolde, setBudgetSolde]       = useState<number | null>(null)
+  const [budgetEnAlerte, setBudgetEnAlerte] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -187,6 +189,15 @@ export default function CarburantPage() {
     setUserRole(data?.user?.role || '')
   }
 
+  const fetchBudget = async () => {
+    const res  = await fetch('/api/budget')
+    const data = await res.json()
+    if (data.solde !== undefined) {
+      setBudgetSolde(data.solde)
+      setBudgetEnAlerte(data.enAlerte)
+    }
+  }
+
   const handlePrixUpdate = async () => {
     if (!newPrix || isNaN(parseFloat(newPrix))) return
     await fetch('/api/parametres', {
@@ -200,7 +211,7 @@ export default function CarburantPage() {
   }
 
   useEffect(() => { fetchData() }, [fetchData])
-  useEffect(() => { fetchVehicules(); fetchPrix(); fetchSession() }, [])
+  useEffect(() => { fetchVehicules(); fetchPrix(); fetchSession(); fetchBudget() }, [])
 
   // Reset forcer when vehicule changes
   useEffect(() => {
@@ -223,7 +234,7 @@ export default function CarburantPage() {
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error || 'Erreur') } else {
-      setShowModal(false); setForm(emptyForm); fetchData(); fetchVehicules()
+      setShowModal(false); setForm(emptyForm); fetchData(); fetchVehicules(); fetchBudget()
     }
     setSubmitting(false)
   }
@@ -246,7 +257,25 @@ export default function CarburantPage() {
           <h2 className="text-xl font-bold text-white">Sorties Carburant</h2>
           <p className="text-slate-400 text-sm">{sorties.length} sortie{sorties.length !== 1 ? 's' : ''} affichée{sorties.length !== 1 ? 's' : ''}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Budget carburant */}
+          {budgetSolde !== null && (
+            <div className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${budgetEnAlerte ? 'bg-red-500/10 border-red-500/30' : 'bg-[#1E293B] border-slate-700/50'}`}>
+              <div>
+                <p className="text-slate-400 text-xs">Budget carte essence</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className={`font-bold text-sm ${budgetEnAlerte ? 'text-red-400' : 'text-white'}`}>
+                    {formatCFA(budgetSolde)}
+                  </p>
+                  {budgetEnAlerte && (
+                    <svg className="w-3.5 h-3.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex items-center gap-3 bg-[#1E293B] border border-slate-700/50 rounded-xl px-4 py-3">
             <div>
               <p className="text-slate-400 text-xs">Prix carburant</p>

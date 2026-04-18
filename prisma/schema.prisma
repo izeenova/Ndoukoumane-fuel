@@ -22,6 +22,7 @@ model User {
 
   sortiesCreees    SortieCarburant[] @relation("SortieCreatedBy")
   reparationsCreees Reparation[]     @relation("ReparationCreatedBy")
+  recharges        RechargeBudget[]  @relation("RechargeCreatedBy")
 }
 
 enum RoleUser {
@@ -143,4 +144,27 @@ model Parametre {
   cle       String   @id
   valeur    String
   updatedAt DateTime @updatedAt
+}
+
+// ─── Budget Carburant (carte d'essence) ───────────────────────────────────────
+
+model BudgetCarburant {
+  id          String           @id @default(cuid())
+  solde       Float            @default(500000)
+  seuilAlerte Float            @default(50000)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  recharges   RechargeBudget[]
+}
+
+model RechargeBudget {
+  id          String          @id @default(cuid())
+  montant     Float
+  note        String?
+  budgetId    String
+  budget      BudgetCarburant @relation(fields: [budgetId], references: [id])
+  createdById String
+  createdBy   User            @relation("RechargeCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime        @default(now())
 }

@@ -122,8 +122,9 @@ export async function POST(req: NextRequest) {
     const prixLitreNum = parseFloat(prixLitre)
     const coutTotal = litresNum * prixLitreNum
 
-    const [sortie] = await prisma.$transaction([
-      prisma.sortieCarburant.create({
+    // Transaction : créer sortie + maj véhicule + déduire du budget
+    const sortie = await prisma.$transaction(async (tx) => {
+      const s = await tx.sortieCarburant.create({
         data: {
           vehiculeId,
           personnelId,
@@ -135,12 +136,20 @@ export async function POST(req: NextRequest) {
           createdById: (session.user as { id: string }).id,
         },
         include: { vehicule: true, personnel: true },
-      }),
-      prisma.vehicule.update({
+      })
+
+      await tx.vehicule.update({
         where: { id: vehiculeId },
         data: { niveauActuel: Math.max(0, vehicule.niveauActuel - litresNum) },
-      }),
-    ])
+      })
+
+      // Déduire du budget carburant
+      await tx.budgetCarburant.updateMany({
+        data: { solde: { decrement: coutTotal } },
+      })
+
+      return s
+    })
 
     return NextResponse.json(sortie, { status: 201 })
   } catch (error) {

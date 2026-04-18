@@ -341,6 +341,17 @@ async function main() {
   })
   console.log('✅ Prix carburant par défaut : 650 FCFA/L')
 
+  // ─── Budget carburant (carte d'essence) ────────────────────────────────────
+  const budgetExist = await prisma.budgetCarburant.count()
+  if (budgetExist === 0) {
+    await prisma.budgetCarburant.create({
+      data: { solde: 500000, seuilAlerte: 50000 },
+    })
+    console.log('✅ Budget carburant initialisé : 500 000 FCFA')
+  } else {
+    console.log('ℹ️  Budget carburant déjà existant, non modifié')
+  }
+
   console.log('\n🚀 Base de données prête !')
   console.log('   Connexion admin : admin@ndoukouman.com / Admin@2025')
 }
