@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { formatCFA, formatLitres, formatDate, getNiveauPourcentage, getNiveauBgColor } from '@/lib/utils'
+import { formatCFA, formatLitres, formatDate } from '@/lib/utils'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { DashboardCharts } from '@/components/dashboard/DashboardCharts'
 
@@ -16,9 +16,7 @@ async function getDashboardData() {
     totalSortiesMoisPrecedent,
     totalReparationsMois,
     vehiculesActifs,
-    alertesActives,
     recentSorties,
-    vehiculesAlerte,
     monthlyData,
     budget,
   ] = await Promise.all([
@@ -40,29 +38,11 @@ async function getDashboardData() {
     }),
     // Véhicules actifs
     prisma.vehicule.count({ where: { statut: 'ACTIF' } }),
-    // Alertes carburant
-    prisma.vehicule.findMany({
-      where: {
-        statut: 'ACTIF',
-        alerte: { actif: true },
-      },
-      include: { alerte: true },
-    }),
     // 5 dernières sorties
     prisma.sortieCarburant.findMany({
       take: 5,
       orderBy: { date: 'desc' },
-      include: {
-        vehicule: true,
-        personnel: true,
-      },
-    }),
-    // Véhicules avec niveau bas
-    prisma.vehicule.findMany({
-      where: { statut: 'ACTIF' },
-      include: { alerte: true },
-      orderBy: { niveauActuel: 'asc' },
-      take: 5,
+      include: { vehicule: true, personnel: true },
     }),
     // Données 6 derniers mois
     Promise.all(
@@ -83,12 +63,6 @@ async function getDashboardData() {
     prisma.budgetCarburant.findFirst(),
   ])
 
-  const alertesCarburant = alertesActives.filter(v => {
-    if (!v.alerte) return false
-    const pct = getNiveauPourcentage(v.niveauActuel, v.capaciteReservoir)
-    return pct <= v.alerte.seuil
-  })
-
   const tendanceMois = totalSortiesMoisPrecedent._sum.coutTotal
     ? Math.round(
         ((totalSortiesMois._sum.coutTotal || 0) - (totalSortiesMoisPrecedent._sum.coutTotal || 0)) /
@@ -102,9 +76,7 @@ async function getDashboardData() {
     nombreSorties: totalSortiesMois._count || 0,
     totalReparations: totalReparationsMois._sum.cout || 0,
     vehiculesActifs,
-    nombreAlertes: alertesCarburant.length,
     recentSorties,
-    vehiculesAlerte: vehiculesAlerte.slice(0, 4),
     monthlyData: monthlyData.reverse(),
     tendanceMois,
     budget: budget ? {
@@ -222,13 +194,14 @@ export default async function DashboardPage() {
           }
         />
         <StatCard
-          title="Alertes carburant"
-          value={String(data.nombreAlertes)}
-          subtitle="Véhicules niveau bas"
-          color={data.nombreAlertes > 0 ? 'red' : 'green'}
+          title="Réparations ce mois"
+          value={formatCFA(data.totalReparations)}
+          subtitle="Coût total"
+          color="red"
           icon={
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           }
         />
@@ -237,9 +210,8 @@ export default async function DashboardPage() {
       {/* Graphiques */}
       <DashboardCharts monthlyData={data.monthlyData} />
 
-      {/* Dernières sorties + Véhicules niveau bas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Dernières sorties */}
+      {/* Dernières sorties */}
+      <div className="grid grid-cols-1 gap-6">
         <div className="bg-[#1E293B] rounded-xl border border-slate-700/50">
           <div className="px-5 py-4 border-b border-slate-700/50 flex items-center justify-between">
             <h3 className="text-white font-semibold text-sm">Dernières sorties carburant</h3>
@@ -272,64 +244,9 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Niveaux véhicules */}
-        <div className="bg-[#1E293B] rounded-xl border border-slate-700/50">
-          <div className="px-5 py-4 border-b border-slate-700/50 flex items-center justify-between">
-            <h3 className="text-white font-semibold text-sm">Niveaux carburant véhicules</h3>
-            <a href="/vehicules" className="text-blue-400 text-xs hover:text-blue-300">Voir tout →</a>
-          </div>
-          <div className="px-5 py-4 space-y-4">
-            {data.vehiculesAlerte.length === 0 ? (
-              <p className="text-slate-500 text-sm text-center py-4">Aucun véhicule</p>
-            ) : (
-              data.vehiculesAlerte.map((vehicule) => {
-                const pct = getNiveauPourcentage(vehicule.niveauActuel, vehicule.capaciteReservoir)
-                const bgColor = getNiveauBgColor(pct)
-                const seuil = vehicule.alerte?.seuil || 20
-                const enAlerte = vehicule.alerte?.actif && pct <= seuil
-
-                return (
-                  <div key={vehicule.id}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-white text-sm font-medium">{vehicule.immatriculation}</span>
-                        {enAlerte && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-[10px] font-medium">
-                            ⚠ Bas
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-slate-400 text-xs">
-                        {formatLitres(vehicule.niveauActuel)} / {formatLitres(vehicule.capaciteReservoir)}
-                      </span>
-                    </div>
-                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${bgColor} progress-fill`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <p className="text-slate-600 text-xs mt-1">{pct}% · {vehicule.marque} {vehicule.modele}</p>
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Réparations ce mois */}
-      {data.totalReparations > 0 && (
-        <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Coût total réparations ce mois</p>
-              <p className="text-2xl font-bold text-white mt-1">{formatCFA(data.totalReparations)}</p>
-            </div>
-            <a href="/reparations" className="text-blue-400 text-sm hover:text-blue-300">Voir les réparations →</a>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
