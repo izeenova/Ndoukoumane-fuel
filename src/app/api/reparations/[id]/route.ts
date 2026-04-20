@@ -28,7 +28,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       include: { vehicule: true, personnel: true },
     })
 
-    // Mettre à jour le statut du véhicule si fourni
     if (vehiculeStatut) {
       await prisma.vehicule.update({
         where: { id: reparation.vehiculeId },
@@ -50,9 +49,28 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    await prisma.reparation.delete({ where: { id: params.id } })
+    const reparation = await prisma.reparation.findUnique({
+      where: { id: params.id },
+      include: { vehicule: true, personnel: true },
+    })
+    if (!reparation) return NextResponse.json({ error: 'Réparation introuvable' }, { status: 404 })
+
+    await prisma.$transaction(async (tx) => {
+      await tx.reparation.delete({ where: { id: params.id } })
+
+      await tx.suppressionLog.create({
+        data: {
+          type: 'REPARATION',
+          description: `${reparation.vehicule.immatriculation} — ${reparation.description}${reparation.personnel ? ` — ${reparation.personnel.prenom} ${reparation.personnel.nom}` : ''}`,
+          montant: reparation.cout,
+          createdById: (session.user as { id: string }).id,
+        },
+      })
+    })
+
     return NextResponse.json({ success: true })
   } catch (error) {
+    console.error('DELETE /api/reparations/[id]:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
