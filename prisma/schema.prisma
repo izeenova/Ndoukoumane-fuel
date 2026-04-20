@@ -23,6 +23,7 @@ model User {
   sortiesCreees    SortieCarburant[] @relation("SortieCreatedBy")
   reparationsCreees Reparation[]     @relation("ReparationCreatedBy")
   recharges        RechargeBudget[]  @relation("RechargeCreatedBy")
+  suppressions     SuppressionLog[]  @relation("SuppressionLogCreatedBy")
 }
 
 enum RoleUser {
@@ -167,4 +168,14 @@ model RechargeBudget {
   createdById String
   createdBy   User            @relation("RechargeCreatedBy", fields: [createdById], references: [id])
   createdAt   DateTime        @default(now())
+}
+
+model SuppressionLog {
+  id          String   @id @default(cuid())
+  type        String
+  description String
+  montant     Float
+  createdById String
+  createdBy   User     @relation("SuppressionLogCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
 }

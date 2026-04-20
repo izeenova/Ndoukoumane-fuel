@@ -10,22 +10,20 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const search = searchParams.get('search') || ''
-    const type = searchParams.get('type') || ''
+    const type   = searchParams.get('type')   || ''
     const statut = searchParams.get('statut') || ''
 
     const vehicules = await prisma.vehicule.findMany({
       where: {
         AND: [
-          search ? {
-            OR: [
-              { immatriculation: { contains: search, mode: 'insensitive' } },
-              { marque: { contains: search, mode: 'insensitive' } },
-              { modele: { contains: search, mode: 'insensitive' } },
-            ]
-          } : {},
-          type ? { type: type as 'CAMION' | 'VOITURE' } : {},
+          search ? { OR: [
+            { immatriculation: { contains: search, mode: 'insensitive' } },
+            { marque:          { contains: search, mode: 'insensitive' } },
+            { modele:          { contains: search, mode: 'insensitive' } },
+          ]} : {},
+          type   ? { type:   type   as 'CAMION' | 'VOITURE' } : {},
           statut ? { statut: statut as 'ACTIF' | 'EN_REPARATION' | 'HORS_SERVICE' } : {},
-        ]
+        ],
       },
       include: {
         alerte: true,
@@ -51,31 +49,46 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { immatriculation, type, marque, modele, annee, capaciteReservoir, niveauActuel, statut, notes } = body
+    const { immatriculation, type, marque, modele, annee, capaciteReservoir,
+            niveauActuel, statut, notes, personnelAssigneId, newPersonnel } = body
 
     if (!immatriculation || !type || !marque || !modele || !capaciteReservoir) {
       return NextResponse.json({ error: 'Champs obligatoires manquants' }, { status: 400 })
     }
 
+    let finalPersonnelId: string | null = personnelAssigneId || null
+
+    if (newPersonnel?.prenom && newPersonnel?.nom) {
+      const created = await prisma.personnel.create({
+        data: {
+          prenom:    newPersonnel.prenom.trim(),
+          nom:       newPersonnel.nom.trim(),
+          role:      newPersonnel.role || 'RESPONSABLE_SERVICE',
+          telephone: newPersonnel.telephone?.trim() || null,
+          actif:     true,
+        },
+      })
+      finalPersonnelId = created.id
+    }
+
     const vehicule = await prisma.vehicule.create({
       data: {
-        immatriculation: immatriculation.toUpperCase().trim(),
+        immatriculation:    immatriculation.toUpperCase().trim(),
         type,
-        marque: marque.trim(),
-        modele: modele.trim(),
-        annee: annee ? parseInt(annee) : null,
-        capaciteReservoir: parseFloat(capaciteReservoir),
-        niveauActuel: parseFloat(niveauActuel || 0),
-        statut: statut || 'ACTIF',
-        notes: notes?.trim() || null,
-        alerte: {
-          create: {
-            seuil: 20,
-            actif: true,
-          }
-        }
+        marque:             marque.trim(),
+        modele:             modele.trim(),
+        annee:              annee ? parseInt(annee) : null,
+        capaciteReservoir:  parseFloat(capaciteReservoir),
+        niveauActuel:       parseFloat(niveauActuel || 0),
+        statut:             statut || 'ACTIF',
+        notes:              notes?.trim() || null,
+        personnelAssigneId: finalPersonnelId,
+        alerte: { create: { seuil: 20, actif: true } },
       },
-      include: { alerte: true },
+      include: {
+        alerte: true,
+        personnelAssigne: { select: { id: true, prenom: true, nom: true } },
+      },
     })
 
     return NextResponse.json(vehicule, { status: 201 })

@@ -151,6 +151,8 @@ export default function CarburantPage() {
   const [userRole, setUserRole] = useState('')
   const [budgetSolde, setBudgetSolde]       = useState<number | null>(null)
   const [budgetEnAlerte, setBudgetEnAlerte] = useState(false)
+  const [suppressions, setSuppressions]     = useState<{ id: string; description: string; montant: number; createdAt: string; createdBy: { name: string } }[]>([])
+  const [showSuppressions, setShowSuppressions] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -239,10 +241,17 @@ export default function CarburantPage() {
     setSubmitting(false)
   }
 
+  const fetchSuppressions = async () => {
+    const res  = await fetch('/api/carburant/suppressions')
+    const data = await res.json()
+    setSuppressions(Array.isArray(data) ? data : [])
+  }
+
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer cette sortie carburant ?')) return
+    if (!confirm('Supprimer cette sortie carburant ? Le montant sera remboursé sur le budget carte essence.')) return
     await fetch(`/api/carburant/${id}`, { method: 'DELETE' })
-    fetchData(); fetchVehicules()
+    fetchData(); fetchVehicules(); fetchBudget()
+    if (showSuppressions) fetchSuppressions()
   }
 
   const getRolePersonnelLabel = (role: string) => {
@@ -601,6 +610,48 @@ export default function CarburantPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* ── Historique suppressions (admin only) ── */}
+      {userRole === 'ADMIN' && (
+        <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 overflow-hidden">
+          <button
+            onClick={() => { setShowSuppressions(s => !s); if (!showSuppressions) fetchSuppressions() }}
+            className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-800/30 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              <span className="text-slate-300 text-sm font-medium">Historique des suppressions</span>
+              <span className="text-slate-500 text-xs">(admin uniquement)</span>
+            </div>
+            <svg className={`w-4 h-4 text-slate-400 transition-transform ${showSuppressions ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showSuppressions && (
+            <div className="border-t border-slate-700/50">
+              {suppressions.length === 0 ? (
+                <p className="text-slate-500 text-sm text-center py-8">Aucune suppression enregistrée</p>
+              ) : (
+                <div className="divide-y divide-slate-800/60">
+                  {suppressions.map(log => (
+                    <div key={log.id} className="px-5 py-3.5 flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-slate-300 text-sm truncate">{log.description}</p>
+                        <p className="text-slate-500 text-xs mt-0.5">
+                          Supprimé par {log.createdBy.name} · {new Date(log.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      <span className="text-green-400 text-sm font-semibold flex-shrink-0">+{formatCFA(log.montant)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
