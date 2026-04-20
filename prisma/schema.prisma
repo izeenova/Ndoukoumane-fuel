@@ -34,6 +34,11 @@ enum RoleUser {
 
 // ─── Véhicules ────────────────────────────────────────────────────────────────
 
+enum TypeCarburant {
+  ESSENCE
+  GASOIL
+}
+
 model Vehicule {
   id                String         @id @default(cuid())
   immatriculation   String         @unique
@@ -46,6 +51,7 @@ model Vehicule {
   statut            StatutVehicule @default(ACTIF)
   notes             String?
   periodeCarburation Int           @default(30) // jours entre deux pleins
+  typeCarburant      TypeCarburant  @default(ESSENCE)
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 

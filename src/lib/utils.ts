@@ -103,5 +103,9 @@ export function canAccessReparations(role: string): boolean {
 }
 
 export function canAccessAlertes(role: string): boolean {
+  return ['ADMIN', 'CARBURANT'].includes(role)
+}
+
+export function canAccessCarte(role: string): boolean {
   return role === 'ADMIN'
 }
