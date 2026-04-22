@@ -39,3 +39,6 @@ next-env.d.ts
 
 # Prisma - migrations doivent être versionnées
 # prisma/migrations/
+
+# Claude Code
+.claude/
