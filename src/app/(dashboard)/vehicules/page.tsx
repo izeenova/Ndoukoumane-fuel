@@ -150,12 +150,22 @@ export default function VehiculesPage() {
     else {
       setShowModal(false)
       if (editVehicule) {
-        // Mise à jour locale sans rechargement (évite le scroll en haut)
-        setVehicules(vs => vs.map(v => v.id === editVehicule.id ? { ...v, ...data } : v))
+        // Mise à jour locale sans rechargement ni scroll (on préserve les sorties existantes)
+        setVehicules(vs => vs.map(v =>
+          v.id === editVehicule.id
+            ? { ...v, ...data, sorties: v.sorties }
+            : v
+        ))
+        // Recharger le personnel uniquement si l'assignation a changé
+        const personnelAChange =
+          assignMode === 'new' ||
+          (assignMode === 'existing' && selectedPersonnelId !== editVehicule.personnelAssigne?.id) ||
+          (assignMode === 'none' && editVehicule.personnelAssigne !== null)
+        if (personnelAChange) fetchPersonnel()
       } else {
         fetchVehicules()
+        fetchPersonnel()
       }
-      fetchPersonnel()
     }
     setSubmitting(false)
   }
