@@ -147,7 +147,16 @@ export default function VehiculesPage() {
     const data = await res.json()
 
     if (!res.ok) { setError(data.error || 'Une erreur est survenue') }
-    else { setShowModal(false); fetchVehicules(); fetchPersonnel() }
+    else {
+      setShowModal(false)
+      if (editVehicule) {
+        // Mise à jour locale sans rechargement (évite le scroll en haut)
+        setVehicules(vs => vs.map(v => v.id === editVehicule.id ? { ...v, ...data } : v))
+      } else {
+        fetchVehicules()
+      }
+      fetchPersonnel()
+    }
     setSubmitting(false)
   }
 
