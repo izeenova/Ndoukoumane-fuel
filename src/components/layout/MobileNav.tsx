@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { cn, canAccessVehicules, canAccessPersonnel, canAccessCarburant, canAccessReparations, canAccessAlertes, getRoleUserLabel } from '@/lib/utils'
+import { cn, canAccessVehicules, canAccessPersonnel, canAccessCarburant, canAccessReparations, canAccessAlertes, canAccessVidanges, getRoleUserLabel } from '@/lib/utils'
 
 interface MobileNavProps {
   user: { name: string; email: string; role: string }
@@ -19,6 +19,7 @@ const navItems = [
   { href: '/personnel', label: 'Personnel', permission: canAccessPersonnel },
   { href: '/carburant', label: 'Sorties Carburant', permission: canAccessCarburant },
   { href: '/reparations', label: 'Réparations', permission: canAccessReparations },
+  { href: '/vidanges', label: 'Vidanges', permission: canAccessVidanges },
   { href: '/stats', label: 'Statistiques', permission: canAccessStats },
   { href: '/alertes', label: 'Alertes', permission: canAccessAlertes },
   { href: '/carte', label: 'Carte Essence', permission: (role: string) => role === 'ADMIN' },

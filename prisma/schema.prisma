@@ -24,6 +24,7 @@ model User {
   reparationsCreees Reparation[]     @relation("ReparationCreatedBy")
   recharges        RechargeBudget[]  @relation("RechargeCreatedBy")
   suppressions     SuppressionLog[]  @relation("SuppressionLogCreatedBy")
+  vidangesCreees   Vidange[]         @relation("VidangeCreatedBy")
 }
 
 enum RoleUser {
@@ -58,6 +59,7 @@ model Vehicule {
   sorties            SortieCarburant[]
   reparations        Reparation[]
   alerte             AlerteCarburant?
+  vidanges           Vidange[]
   personnelAssigne   Personnel?      @relation("VehiculeAssigne", fields: [personnelAssigneId], references: [id])
   personnelAssigneId String?         @unique
 }
@@ -174,6 +176,21 @@ model RechargeBudget {
   createdById String
   createdBy   User            @relation("RechargeCreatedBy", fields: [createdById], references: [id])
   createdAt   DateTime        @default(now())
+}
+
+// ─── Vidanges ─────────────────────────────────────────────────────────────────
+
+model Vidange {
+  id          String    @id @default(cuid())
+  vehicule    Vehicule  @relation(fields: [vehiculeId], references: [id])
+  vehiculeId  String
+  cout        Float     // coût total en FCFA
+  date        DateTime  @default(now())
+  notes       String?
+  createdBy   User      @relation("VidangeCreatedBy", fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model SuppressionLog {

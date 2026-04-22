@@ -109,3 +109,7 @@ export function canAccessAlertes(role: string): boolean {
 export function canAccessCarte(role: string): boolean {
   return role === 'ADMIN'
 }
+
+export function canAccessVidanges(role: string): boolean {
+  return ['ADMIN', 'CARBURANT'].includes(role)
+}
