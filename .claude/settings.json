@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path // .tool_response.filePath // empty' 2>/dev/null); [ -z \"$FILE\" ] && exit 0; DIR=$(git -C \"$(dirname \"$FILE\")\" rev-parse --show-toplevel 2>/dev/null); [ -z \"$DIR\" ] && exit 0; cd \"$DIR\" && git add -A && git diff --staged --quiet || (git commit -m \"Auto-save: $(date '+%Y-%m-%d %H:%M')\" && git push origin HEAD) 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Push vers GitHub..."
+          }
+        ]
+      }
+    ]
+  }
+}
