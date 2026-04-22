@@ -19,6 +19,7 @@ async function getDashboardData() {
     recentSorties,
     monthlyData,
     budget,
+    prochainRavitaillementRaw,
   ] = await Promise.all([
     // Total carburant ce mois
     prisma.sortieCarburant.aggregate({
@@ -61,7 +62,28 @@ async function getDashboardData() {
     ),
     // Budget carte essence
     prisma.budgetCarburant.findFirst(),
+    // Prochains ravitaillements
+    prisma.vehicule.findMany({
+      where: { statut: 'ACTIF' },
+      include: {
+        sorties: { take: 1, orderBy: { date: 'desc' }, select: { date: true } },
+        personnelAssigne: { select: { prenom: true, nom: true } },
+      },
+    }),
   ])
+
+  const prochainRavitaillement = prochainRavitaillementRaw
+    .map(v => {
+      const lastSortie = v.sorties[0]
+      const daysSince = lastSortie
+        ? Math.floor((now.getTime() - new Date(lastSortie.date).getTime()) / (1000 * 60 * 60 * 24))
+        : 9999
+      const joursRestants = v.periodeCarburation - daysSince
+      return { id: v.id, immatriculation: v.immatriculation, marque: v.marque, modele: v.modele, joursRestants, personnelAssigne: v.personnelAssigne }
+    })
+    .filter(v => v.joursRestants <= 5)
+    .sort((a, b) => a.joursRestants - b.joursRestants)
+    .slice(0, 6)
 
   const tendanceMois = totalSortiesMoisPrecedent._sum.coutTotal
     ? Math.round(
@@ -79,6 +101,7 @@ async function getDashboardData() {
     recentSorties,
     monthlyData: monthlyData.reverse(),
     tendanceMois,
+    prochainRavitaillement,
     budget: budget ? {
       solde: budget.solde,
       seuilAlerte: budget.seuilAlerte,
@@ -209,6 +232,38 @@ export default async function DashboardPage() {
 
       {/* Graphiques */}
       <DashboardCharts monthlyData={data.monthlyData} />
+
+      {/* Prochains ravitaillements */}
+      {data.prochainRavitaillement.length > 0 && (
+        <div className="bg-[#1E293B] rounded-xl border border-slate-700/50">
+          <div className="px-5 py-4 border-b border-slate-700/50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="text-white font-semibold text-sm">Prochains ravitaillements</h3>
+            </div>
+            <a href="/alertes" className="text-blue-400 text-xs hover:text-blue-300">Voir tout →</a>
+          </div>
+          <div className="divide-y divide-slate-800/60">
+            {data.prochainRavitaillement.map(v => (
+              <div key={v.id} className="px-5 py-3 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-white text-sm font-medium">{v.immatriculation}</p>
+                  <p className="text-slate-500 text-xs">{v.marque} {v.modele}{v.personnelAssigne ? ` · ${v.personnelAssigne.prenom} ${v.personnelAssigne.nom}` : ''}</p>
+                </div>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold flex-shrink-0 ${
+                  v.joursRestants <= 0 ? 'bg-red-500/20 text-red-400' :
+                  v.joursRestants === 1 ? 'bg-orange-500/20 text-orange-400' :
+                  'bg-yellow-500/20 text-yellow-400'
+                }`}>
+                  {v.joursRestants <= 0 ? 'En retard' : v.joursRestants === 1 ? 'Demain' : `J-${v.joursRestants}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Dernières sorties */}
       <div className="grid grid-cols-1 gap-6">

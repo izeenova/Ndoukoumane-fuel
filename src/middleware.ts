@@ -16,9 +16,16 @@ export default withAuth(
     if (
       pathname.startsWith('/vehicules') ||
       pathname.startsWith('/personnel') ||
-      pathname.startsWith('/alertes')
+      pathname.startsWith('/carte')
     ) {
       if (role !== 'ADMIN') {
+        return NextResponse.redirect(new URL('/dashboard', req.url))
+      }
+    }
+
+    // Alertes : ADMIN + CARBURANT
+    if (pathname.startsWith('/alertes')) {
+      if (!['ADMIN', 'CARBURANT'].includes(role)) {
         return NextResponse.redirect(new URL('/dashboard', req.url))
       }
     }
@@ -52,5 +59,6 @@ export const config = {
     '/carburant/:path*',
     '/reparations/:path*',
     '/alertes/:path*',
+    '/carte/:path*',
   ],
 }

@@ -21,6 +21,7 @@ const navItems = [
   { href: '/reparations', label: 'Réparations', permission: canAccessReparations },
   { href: '/stats', label: 'Statistiques', permission: canAccessStats },
   { href: '/alertes', label: 'Alertes', permission: canAccessAlertes },
+  { href: '/carte', label: 'Carte Essence', permission: (role: string) => role === 'ADMIN' },
 ]
 
 export function MobileNav({ user, isOpen, onClose }: MobileNavProps) {

@@ -22,6 +22,7 @@ interface Vehicule {
   modele: string
   niveauActuel: number
   periodeCarburation: number
+  typeCarburant: 'ESSENCE' | 'GASOIL'
   personnelAssigne: { id: string; prenom: string; nom: string } | null
   sorties: { date: string }[]
 }
@@ -146,8 +147,11 @@ export default function CarburantPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [prixGlobal, setPrixGlobal] = useState('650')
+  const [prixGasoil, setPrixGasoil] = useState('700')
   const [editingPrix, setEditingPrix] = useState(false)
   const [newPrix, setNewPrix] = useState('')
+  const [editingPrixGasoil, setEditingPrixGasoil] = useState(false)
+  const [newPrixGasoil, setNewPrixGasoil] = useState('')
   const [userRole, setUserRole] = useState('')
   const [budgetSolde, setBudgetSolde]       = useState<number | null>(null)
   const [budgetEnAlerte, setBudgetEnAlerte] = useState(false)
@@ -182,6 +186,7 @@ export default function CarburantPage() {
     const res = await fetch('/api/parametres')
     const data = await res.json()
     setPrixGlobal(data.prixCarburant || '650')
+    setPrixGasoil(data.prixGasoil || '700')
     setForm(f => ({ ...f, prixLitre: data.prixCarburant || '650' }))
   }
 
@@ -212,15 +217,34 @@ export default function CarburantPage() {
     setNewPrix('')
   }
 
+  const handlePrixGasoilUpdate = async () => {
+    if (!newPrixGasoil || isNaN(parseFloat(newPrixGasoil))) return
+    await fetch('/api/parametres', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prixGasoil: newPrixGasoil }),
+    })
+    setPrixGasoil(newPrixGasoil)
+    setEditingPrixGasoil(false)
+    setNewPrixGasoil('')
+  }
+
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => { fetchVehicules(); fetchPrix(); fetchSession(); fetchBudget() }, [])
+
+  const selectedVehicule = vehicules.find(v => v.id === form.vehiculeId) || null
 
   // Reset forcer when vehicule changes
   useEffect(() => {
     setForm(f => ({ ...f, forcer: false }))
   }, [form.vehiculeId])
 
-  const selectedVehicule = vehicules.find(v => v.id === form.vehiculeId) || null
+  // Auto-select prix selon type carburant du véhicule
+  useEffect(() => {
+    if (!selectedVehicule) return
+    const prix = selectedVehicule.typeCarburant === 'GASOIL' ? prixGasoil : prixGlobal
+    setForm(f => ({ ...f, prixLitre: prix }))
+  }, [form.vehiculeId]) // eslint-disable-line
   const vehiculeStatus = selectedVehicule ? getVehiculeStatus(selectedVehicule) : null
 
   const coutCalcule = form.litres && form.prixLitre
@@ -287,7 +311,7 @@ export default function CarburantPage() {
           )}
           <div className="flex items-center gap-3 bg-[#1E293B] border border-slate-700/50 rounded-xl px-4 py-3">
             <div>
-              <p className="text-slate-400 text-xs">Prix carburant</p>
+              <p className="text-slate-400 text-xs">Prix carburant (Essence)</p>
               {editingPrix ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -306,6 +330,36 @@ export default function CarburantPage() {
                   <p className="text-white font-bold text-sm">{parseInt(prixGlobal).toLocaleString('fr-FR')} FCFA/L</p>
                   {userRole === 'ADMIN' && (
                     <button onClick={() => { setNewPrix(prixGlobal); setEditingPrix(true) }} className="text-slate-500 hover:text-blue-400 transition-colors">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-3 bg-[#1E293B] border border-amber-500/20 rounded-xl px-4 py-3">
+            <div>
+              <p className="text-slate-400 text-xs">Prix carburant (Gasoil)</p>
+              {editingPrixGasoil ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type="number"
+                    value={newPrixGasoil}
+                    onChange={e => setNewPrixGasoil(e.target.value)}
+                    className="w-24 bg-[#0F172A] border border-slate-700 rounded-lg px-2 py-1 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    placeholder={prixGasoil}
+                    autoFocus
+                  />
+                  <button onClick={handlePrixGasoilUpdate} className="text-green-400 hover:text-green-300 text-xs font-medium">Valider</button>
+                  <button onClick={() => setEditingPrixGasoil(false)} className="text-slate-500 hover:text-white text-xs">Annuler</button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-amber-400 font-bold text-sm">{parseInt(prixGasoil).toLocaleString('fr-FR')} FCFA/L</p>
+                  {userRole === 'ADMIN' && (
+                    <button onClick={() => { setNewPrixGasoil(prixGasoil); setEditingPrixGasoil(true) }} className="text-slate-500 hover:text-amber-400 transition-colors">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>

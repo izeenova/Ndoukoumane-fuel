@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const body = await req.json()
     const { immatriculation, type, marque, modele, annee, capaciteReservoir,
             niveauActuel, statut, notes, periodeCarburation,
-            personnelAssigneId, newPersonnel, removePersonnel } = body
+            personnelAssigneId, newPersonnel, removePersonnel, typeCarburant } = body
 
     // Résoudre l'ID personnel final
     let finalPersonnelId: string | null | undefined = undefined
@@ -68,6 +68,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       statut,
       notes:             notes?.trim() || null,
       periodeCarburation: periodeCarburation ? parseInt(periodeCarburation) : 30,
+      typeCarburant: typeCarburant || undefined,
     }
 
     if (finalPersonnelId !== undefined) {

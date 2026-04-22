@@ -24,6 +24,7 @@ interface Vehicule {
   statut: 'ACTIF' | 'EN_REPARATION' | 'HORS_SERVICE'
   notes: string | null
   periodeCarburation: number
+  typeCarburant: 'ESSENCE' | 'GASOIL'
   alerte: { seuil: number; actif: boolean } | null
   personnelAssigne: { id: string; prenom: string; nom: string } | null
   sorties: { date: string }[]
@@ -38,7 +39,7 @@ const STATUT_COLORS: Record<string, string> = {
 const emptyForm = {
   immatriculation: '', type: 'CAMION', marque: '', modele: '',
   annee: '', capaciteReservoir: '', niveauActuel: '0',
-  statut: 'ACTIF', notes: '', periodeCarburation: '30',
+  statut: 'ACTIF', notes: '', periodeCarburation: '30', typeCarburant: 'ESSENCE' as 'ESSENCE' | 'GASOIL',
 }
 
 const emptyNvPersonnel = { prenom: '', nom: '', role: 'RESPONSABLE_SERVICE', telephone: '' }
@@ -109,6 +110,7 @@ export default function VehiculesPage() {
       niveauActuel: v.niveauActuel.toString(),
       statut: v.statut, notes: v.notes || '',
       periodeCarburation: v.periodeCarburation?.toString() || '30',
+      typeCarburant: v.typeCarburant,
     })
     if (v.personnelAssigne) {
       setAssignMode('existing')
@@ -231,7 +233,11 @@ export default function VehiculesPage() {
                         </div>
                         <div>
                           <p className="text-white font-semibold text-sm">{v.immatriculation}</p>
-                          <p className="text-slate-500 text-xs">{v.marque} {v.modele}{v.annee ? ` · ${v.annee}` : ''} · {getTypeVehiculeLabel(v.type)}</p>
+                          <p className="text-slate-500 text-xs">{v.marque} {v.modele}{v.annee ? ` · ${v.annee}` : ''} · {getTypeVehiculeLabel(v.type)}
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ml-1 ${v.typeCarburant === 'GASOIL' ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                              {v.typeCarburant === 'GASOIL' ? 'Gasoil' : 'Essence'}
+                            </span>
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -353,6 +359,21 @@ export default function VehiculesPage() {
                   <input type="number" value={form.periodeCarburation} onChange={e => setForm(f => ({ ...f, periodeCarburation: e.target.value }))}
                     className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="30" min="7" max="90" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm text-slate-300 mb-1.5">Type de carburant</label>
+                  <div className="flex gap-2">
+                    {(['ESSENCE', 'GASOIL'] as const).map(t => (
+                      <button key={t} type="button" onClick={() => setForm(f => ({ ...f, typeCarburant: t }))}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors border ${
+                          form.typeCarburant === t
+                            ? t === 'ESSENCE' ? 'bg-blue-600 border-blue-500 text-white' : 'bg-amber-600 border-amber-500 text-white'
+                            : 'bg-[#0F172A] border-slate-700 text-slate-400 hover:border-slate-500'
+                        }`}>
+                        {t === 'ESSENCE' ? '⛽ Essence' : '🛢️ Gasoil'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm text-slate-300 mb-1.5">Notes</label>
