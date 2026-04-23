@@ -25,6 +25,7 @@ export default function CartePage() {
   const [showModal, setShowModal]     = useState(false)
   const [montant, setMontant]         = useState('')
   const [note, setNote]               = useState('')
+  const [date, setDate]               = useState('')
   const [submitting, setSubmitting]   = useState(false)
   const [error, setError]             = useState('')
   const [editSeuil, setEditSeuil]       = useState(false)
@@ -49,11 +50,11 @@ export default function CartePage() {
     const res = await fetch('/api/budget', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ montant, note }),
+      body: JSON.stringify({ montant, note, date: date || undefined }),
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error || 'Erreur') }
-    else { setShowModal(false); setMontant(''); setNote(''); fetchBudget() }
+    else { setShowModal(false); setMontant(''); setNote(''); setDate(''); fetchBudget() }
     setSubmitting(false)
   }
 
@@ -257,6 +258,11 @@ export default function CartePage() {
                 <input type="number" value={montant} onChange={e => setMontant(e.target.value)} autoFocus
                   className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="500000" required min="1" />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-300 mb-1.5">Date de recharge <span className="text-slate-500">(optionnel — aujourd&apos;hui par défaut)</span></label>
+                <input type="date" value={date} onChange={e => setDate(e.target.value)}
+                  className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
               </div>
               <div>
                 <label className="block text-sm text-slate-300 mb-1.5">Note (optionnel)</label>

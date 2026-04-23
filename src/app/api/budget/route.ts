@@ -46,12 +46,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Réservé à l\'admin' }, { status: 403 })
     }
 
-    const { montant, note } = await req.json()
+    const { montant, note, date } = await req.json()
     if (!montant || isNaN(parseFloat(montant)) || parseFloat(montant) <= 0) {
       return NextResponse.json({ error: 'Montant invalide' }, { status: 400 })
     }
 
     const montantNum = parseFloat(montant)
+    const createdAt  = date ? new Date(date) : new Date()
+    if (isNaN(createdAt.getTime())) {
+      return NextResponse.json({ error: 'Date invalide' }, { status: 400 })
+    }
 
     // Récupérer ou créer le budget
     let budget = await prisma.budgetCarburant.findFirst()
@@ -67,6 +71,7 @@ export async function POST(req: NextRequest) {
           note: note?.trim() || null,
           budgetId: budget.id,
           createdById: (session.user as { id: string }).id,
+          createdAt,
         },
       }),
       prisma.budgetCarburant.update({
