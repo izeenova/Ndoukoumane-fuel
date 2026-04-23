@@ -33,6 +33,7 @@ export default function CartePage() {
   const [savingSeuil, setSavingSeuil]   = useState(false)
   const [showReset, setShowReset]       = useState(false)
   const [resetting, setResetting]       = useState(false)
+  const [deletingId, setDeletingId]     = useState<string | null>(null)
 
   const fetchBudget = useCallback(async () => {
     setLoading(true)
@@ -56,6 +57,13 @@ export default function CartePage() {
     if (!res.ok) { setError(data.error || 'Erreur') }
     else { setShowModal(false); setMontant(''); setNote(''); setDate(''); fetchBudget() }
     setSubmitting(false)
+  }
+
+  const handleDeleteRecharge = async (id: string) => {
+    setDeletingId(id)
+    await fetch(`/api/budget/recharge/${id}`, { method: 'DELETE' })
+    setDeletingId(null)
+    fetchBudget()
   }
 
   const handleReset = async () => {
@@ -195,9 +203,19 @@ export default function CartePage() {
                       <p className="text-white text-sm font-medium">{formatCFA(r.montant)}</p>
                       <p className="text-slate-500 text-xs">{r.createdBy.name} · {formatDate(r.createdAt)}{r.note ? ` · ${r.note}` : ''}</p>
                     </div>
-                    <svg className="w-4 h-4 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                      </svg>
+                      <button onClick={() => handleDeleteRecharge(r.id)} disabled={deletingId === r.id}
+                        className="text-slate-600 hover:text-red-400 disabled:opacity-40 transition-colors"
+                        title="Supprimer cette recharge">
+                        {deletingId === r.id
+                          ? <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                          : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        }
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
