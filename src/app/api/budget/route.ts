@@ -83,6 +83,30 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// PATCH — réinitialiser le solde à 0 (admin uniquement)
+export async function PATCH() {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if ((session.user as { role: string }).role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Réservé à l\'admin' }, { status: 403 })
+    }
+
+    const budget = await prisma.budgetCarburant.findFirst()
+    if (!budget) return NextResponse.json({ error: 'Budget introuvable' }, { status: 404 })
+
+    const updated = await prisma.budgetCarburant.update({
+      where: { id: budget.id },
+      data: { solde: 0 },
+    })
+
+    return NextResponse.json({ solde: updated.solde, enAlerte: updated.solde <= updated.seuilAlerte })
+  } catch (error) {
+    console.error('PATCH /api/budget:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  }
+}
+
 // PUT — modifier le seuil d'alerte (admin uniquement)
 export async function PUT(req: NextRequest) {
   try {

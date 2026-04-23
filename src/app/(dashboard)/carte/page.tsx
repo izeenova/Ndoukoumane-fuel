@@ -27,9 +27,11 @@ export default function CartePage() {
   const [note, setNote]               = useState('')
   const [submitting, setSubmitting]   = useState(false)
   const [error, setError]             = useState('')
-  const [editSeuil, setEditSeuil]     = useState(false)
-  const [newSeuil, setNewSeuil]       = useState('')
-  const [savingSeuil, setSavingSeuil] = useState(false)
+  const [editSeuil, setEditSeuil]       = useState(false)
+  const [newSeuil, setNewSeuil]         = useState('')
+  const [savingSeuil, setSavingSeuil]   = useState(false)
+  const [showReset, setShowReset]       = useState(false)
+  const [resetting, setResetting]       = useState(false)
 
   const fetchBudget = useCallback(async () => {
     setLoading(true)
@@ -53,6 +55,14 @@ export default function CartePage() {
     if (!res.ok) { setError(data.error || 'Erreur') }
     else { setShowModal(false); setMontant(''); setNote(''); fetchBudget() }
     setSubmitting(false)
+  }
+
+  const handleReset = async () => {
+    setResetting(true)
+    await fetch('/api/budget', { method: 'PATCH' })
+    setShowReset(false)
+    setResetting(false)
+    fetchBudget()
   }
 
   const handleSeuilUpdate = async () => {
@@ -86,13 +96,22 @@ export default function CartePage() {
           <h2 className="text-xl font-bold text-white">Carte Essence</h2>
           <p className="text-slate-400 text-sm">Budget carburant — gestion et historique</p>
         </div>
-        <button onClick={() => { setError(''); setShowModal(true) }}
-          className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          Recharger la carte
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowReset(true)}
+            className="inline-flex items-center gap-2 bg-slate-700 hover:bg-red-600/80 text-slate-300 hover:text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Réinitialiser
+          </button>
+          <button onClick={() => { setError(''); setShowModal(true) }}
+            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Recharger la carte
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -186,6 +205,37 @@ export default function CartePage() {
         </>
       ) : (
         <p className="text-center py-20 text-slate-500 text-sm">Budget introuvable</p>
+      )}
+
+      {/* Modal réinitialisation */}
+      {showReset && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1E293B] rounded-2xl border border-slate-700/50 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
+              <h3 className="text-white font-semibold">Réinitialiser le solde</h3>
+              <button onClick={() => setShowReset(false)} className="text-slate-400 hover:text-white">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-slate-300 text-sm">
+                Cette action va remettre le solde de la carte à <span className="text-white font-bold">0 FCFA</span>.
+                L&apos;historique des recharges est conservé. Continuer ?
+              </p>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setShowReset(false)}
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl text-sm font-medium">Annuler</button>
+                <button onClick={handleReset} disabled={resetting}
+                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+                  {resetting && <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>}
+                  Réinitialiser à 0
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal recharge */}
