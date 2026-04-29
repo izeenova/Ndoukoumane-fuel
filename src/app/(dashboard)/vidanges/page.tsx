@@ -182,6 +182,32 @@ export default function VidangesPage() {
     setSubmitting(false)
   }
 
+  const openEdit = (v: Vidange) => {
+    setEditItem(v)
+    setEditForm({
+      cout:  v.cout.toString(),
+      date:  v.date ? new Date(v.date).toISOString().slice(0, 16) : '',
+      notes: v.notes || '',
+    })
+    setEditError('')
+    setShowEdit(true)
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editItem) return
+    setEditSubmitting(true); setEditError('')
+    const res = await fetch(`/api/vidanges/${editItem.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editForm),
+    })
+    const data = await res.json()
+    if (!res.ok) { setEditError(data.error || 'Erreur') }
+    else { setShowEdit(false); fetchData() }
+    setEditSubmitting(false)
+  }
+
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer cette vidange ?')) return
     await fetch(`/api/vidanges/${id}`, { method: 'DELETE' })
