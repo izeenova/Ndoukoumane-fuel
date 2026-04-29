@@ -126,6 +126,11 @@ export default function VidangesPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [userRole, setUserRole] = useState('')
+  const [editItem, setEditItem]     = useState<Vidange | null>(null)
+  const [showEdit, setShowEdit]     = useState(false)
+  const [editForm, setEditForm]     = useState({ cout: '', date: '', notes: '' })
+  const [editSubmitting, setEditSubmitting] = useState(false)
+  const [editError, setEditError]   = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
