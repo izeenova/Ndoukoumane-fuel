@@ -21,6 +21,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     await prisma.$transaction(async (tx) => {
       await tx.vidange.delete({ where: { id: params.id } })
+
+      // Rembourser le budget carte essence
+      await tx.budgetCarburant.updateMany({
+        data: { solde: { increment: vidange.cout } },
+      })
+
       await tx.suppressionLog.create({
         data: {
           type: 'VIDANGE',
