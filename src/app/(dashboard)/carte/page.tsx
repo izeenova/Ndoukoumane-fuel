@@ -57,7 +57,19 @@ export default function CartePage() {
     setLoading(false)
   }, [])
 
+  const fetchHistorique = useCallback(async () => {
+    setLoadingHist(true)
+    const params = new URLSearchParams()
+    if (histDateDebut) params.set('dateDebut', histDateDebut)
+    if (histDateFin)   params.set('dateFin', histDateFin)
+    const res  = await fetch(`/api/budget/historique?${params}`)
+    const data = await res.json()
+    setHistorique(Array.isArray(data) ? data : [])
+    setLoadingHist(false)
+  }, [histDateDebut, histDateFin])
+
   useEffect(() => { fetchBudget() }, [fetchBudget])
+  useEffect(() => { fetchHistorique() }, [fetchHistorique])
 
   const handleRecharge = async (e: React.FormEvent) => {
     e.preventDefault()
