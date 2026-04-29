@@ -214,36 +214,59 @@ export default function CartePage() {
             <p className="text-slate-500 text-xs text-right">Une alerte est émise sur le tableau de bord<br/>quand le solde passe en dessous de ce seuil.</p>
           </div>
 
-          {/* Historique recharges */}
+          {/* Historique complet des mouvements */}
           <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-700/50">
-              <h3 className="text-white font-semibold text-sm">Historique des recharges</h3>
+            <div className="px-5 py-4 border-b border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <h3 className="text-white font-semibold text-sm">Historique des mouvements</h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <input type="date" value={histDateDebut} onChange={e => setHistDateDebut(e.target.value)}
+                  className="bg-[#0F172A] border border-slate-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <span className="text-slate-500 text-xs">→</span>
+                <input type="date" value={histDateFin} onChange={e => setHistDateFin(e.target.value)}
+                  className="bg-[#0F172A] border border-slate-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                {(histDateDebut || histDateFin) && (
+                  <button onClick={() => { setHistDateDebut(''); setHistDateFin('') }}
+                    className="text-slate-500 hover:text-white text-xs px-2 py-1.5 rounded-lg border border-slate-700 hover:border-slate-500">✕</button>
+                )}
+              </div>
             </div>
-            {budget.recharges.length === 0 ? (
-              <p className="text-center py-10 text-slate-500 text-sm">Aucune recharge effectuée</p>
+
+            {loadingHist ? (
+              <p className="text-center py-10 text-slate-500 text-sm">Chargement...</p>
+            ) : historique.length === 0 ? (
+              <p className="text-center py-10 text-slate-500 text-sm">Aucun mouvement sur cette période</p>
             ) : (
               <div className="divide-y divide-slate-800/60">
-                {budget.recharges.map(r => (
-                  <div key={r.id} className="px-5 py-3.5 flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-white text-sm font-medium">{formatCFA(r.montant)}</p>
-                      <p className="text-slate-500 text-xs">{r.createdBy.name} · {formatDate(r.createdAt)}{r.note ? ` · ${r.note}` : ''}</p>
+                {historique.map(t => {
+                  const isEntree = t.montant > 0
+                  const badgeStyle = t.type === 'RECHARGE'
+                    ? 'bg-green-500/20 text-green-400'
+                    : t.type === 'CARBURANT'
+                    ? 'bg-blue-500/20 text-blue-400'
+                    : 'bg-amber-500/20 text-amber-400'
+                  const badgeLabel = t.type === 'RECHARGE' ? 'Recharge' : t.type === 'CARBURANT' ? 'Carburant' : 'Vidange'
+
+                  return (
+                    <div key={`${t.type}-${t.id}`} className="px-5 py-3.5 flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeStyle}`}>{badgeLabel}</span>
+                          {t.type === 'RECHARGE' && t.createdBy && (
+                            <span className="text-slate-500 text-xs">{t.createdBy}</span>
+                          )}
+                        </div>
+                        <p className="text-slate-300 text-sm truncate">{t.description}</p>
+                        <p className="text-slate-500 text-xs mt-0.5">{formatDate(t.date)}</p>
+                      </div>
+                      <div className="flex-shrink-0 text-right">
+                        <p className={`font-bold text-sm ${isEntree ? 'text-green-400' : 'text-red-400'}`}>
+                          {isEntree ? '+' : ''}{formatCFA(t.montant)}
+                        </p>
+                        <p className="text-slate-500 text-xs mt-0.5">Solde : {formatCFA(t.soldeCumul)}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                      </svg>
-                      <button onClick={() => handleDeleteRecharge(r.id)} disabled={deletingId === r.id}
-                        className="text-slate-600 hover:text-red-400 disabled:opacity-40 transition-colors"
-                        title="Supprimer cette recharge">
-                        {deletingId === r.id
-                          ? <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                          : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        }
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
