@@ -75,15 +75,26 @@ export async function POST(req: NextRequest) {
     const vehicule = await prisma.vehicule.findUnique({ where: { id: vehiculeId } })
     if (!vehicule) return NextResponse.json({ error: 'Véhicule introuvable' }, { status: 404 })
 
-    const vidange = await prisma.vidange.create({
-      data: {
-        vehiculeId,
-        cout: parseFloat(cout),
-        date: date ? new Date(date) : new Date(),
-        notes: notes?.trim() || null,
-        createdById: (session.user as { id: string }).id,
-      },
-      include: { vehicule: true, createdBy: { select: { name: true } } },
+    const coutNum = parseFloat(cout)
+
+    const vidange = await prisma.$transaction(async (tx) => {
+      const v = await tx.vidange.create({
+        data: {
+          vehiculeId,
+          cout: coutNum,
+          date: date ? new Date(date) : new Date(),
+          notes: notes?.trim() || null,
+          createdById: (session.user as { id: string }).id,
+        },
+        include: { vehicule: true, createdBy: { select: { name: true } } },
+      })
+
+      // Déduire du budget carte essence
+      await tx.budgetCarburant.updateMany({
+        data: { solde: { decrement: coutNum } },
+      })
+
+      return v
     })
 
     return NextResponse.json(vidange, { status: 201 })
