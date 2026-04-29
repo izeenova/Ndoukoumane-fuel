@@ -19,6 +19,16 @@ interface Budget {
   recharges: Recharge[]
 }
 
+interface Transaction {
+  id: string
+  type: 'RECHARGE' | 'CARBURANT' | 'VIDANGE'
+  date: string
+  montant: number
+  description: string
+  createdBy?: string
+  soldeCumul: number
+}
+
 export default function CartePage() {
   const [budget, setBudget]           = useState<Budget | null>(null)
   const [loading, setLoading]         = useState(true)
