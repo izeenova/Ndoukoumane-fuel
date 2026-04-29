@@ -755,6 +755,68 @@ export default function CarburantPage() {
         </div>
       )}
 
+      {/* Modal modifier sortie (admin) */}
+      {showEdit && editItem && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1E293B] rounded-2xl border border-slate-700/50 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
+              <div>
+                <h3 className="text-white font-semibold">Modifier la sortie</h3>
+                <p className="text-slate-400 text-xs mt-0.5">{editItem.vehicule.immatriculation} — {editItem.vehicule.marque} {editItem.vehicule.modele}</p>
+              </div>
+              <button onClick={() => setShowEdit(false)} className="text-slate-400 hover:text-white">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              {editError && <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 text-sm">{editError}</div>}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-slate-300 mb-1.5">Litres *</label>
+                  <input type="number" value={editForm.litres} onChange={e => setEditForm(f => ({ ...f, litres: e.target.value }))}
+                    className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required min="0.1" step="0.5" />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-300 mb-1.5">Prix/litre (FCFA) *</label>
+                  <input type="number" value={editForm.prixLitre} onChange={e => setEditForm(f => ({ ...f, prixLitre: e.target.value }))}
+                    className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required min="1" />
+                </div>
+              </div>
+              {editForm.litres && editForm.prixLitre && (
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex items-center justify-between">
+                  <span className="text-blue-300 text-sm">Nouveau coût total</span>
+                  <span className="text-white font-bold">{formatCFA(parseFloat(editForm.litres) * parseFloat(editForm.prixLitre))}</span>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm text-slate-300 mb-1.5">Date et heure</label>
+                <input type="datetime-local" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))}
+                  className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-300 mb-1.5">Notes</label>
+                <textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
+                  className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  rows={2} placeholder="Optionnel..." />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowEdit(false)}
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl text-sm font-medium">Annuler</button>
+                <button type="submit" disabled={editSubmitting}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+                  {editSubmitting && <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>}
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ── Historique suppressions (admin only) ── */}
       {userRole === 'ADMIN' && (
         <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 overflow-hidden">
