@@ -247,8 +247,13 @@ export default function CarburantPage() {
   }, [form.vehiculeId]) // eslint-disable-line
   const vehiculeStatus = selectedVehicule ? getVehiculeStatus(selectedVehicule) : null
 
-  const coutCalcule = form.litres && form.prixLitre
+  // Calculs selon le mode de saisie
+  const litresCalcules = form.saisieMode === 'montant' && form.montant && form.prixLitre
+    ? (parseFloat(form.montant) / parseFloat(form.prixLitre))
+    : null
+  const coutCalcule = form.saisieMode === 'litres' && form.litres && form.prixLitre
     ? (parseFloat(form.litres) * parseFloat(form.prixLitre)).toFixed(0)
+    : form.saisieMode === 'montant' && form.montant ? form.montant
     : '0'
 
   const handleSubmit = async (e: React.FormEvent) => {
