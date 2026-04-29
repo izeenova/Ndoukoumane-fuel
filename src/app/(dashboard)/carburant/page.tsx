@@ -27,7 +27,7 @@ interface Vehicule {
   sorties: { date: string }[]
 }
 
-const emptyForm = { vehiculeId: '', litres: '', prixLitre: '650', date: '', notes: '', forcer: false }
+const emptyForm = { vehiculeId: '', litres: '', montant: '', prixLitre: '650', date: '', notes: '', forcer: false, saisieMode: 'litres' as 'litres' | 'montant' }
 
 
 
