@@ -628,13 +628,40 @@ export default function CarburantPage() {
                 </div>
               )}
 
+              {/* Toggle Litres / Montant */}
+              <div className="flex rounded-xl overflow-hidden border border-slate-700 p-1 gap-1 bg-[#0F172A]">
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, saisieMode: 'litres', montant: '' }))}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${form.saisieMode === 'litres' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >
+                  ⛽ En litres
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, saisieMode: 'montant', litres: '' }))}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${form.saisieMode === 'montant' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >
+                  💰 En montant
+                </button>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-slate-300 mb-1.5">Litres *</label>
-                  <input type="number" value={form.litres} onChange={e => setForm(f => ({ ...f, litres: e.target.value }))}
-                    className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="50" required min="1" step="0.5" />
-                </div>
+                {form.saisieMode === 'litres' ? (
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1.5">Litres *</label>
+                    <input type="number" value={form.litres} onChange={e => setForm(f => ({ ...f, litres: e.target.value }))}
+                      className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="50" required min="1" step="0.5" />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1.5">Montant (FCFA) *</label>
+                    <input type="number" value={form.montant} onChange={e => setForm(f => ({ ...f, montant: e.target.value }))}
+                      className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="32500" required min="1" />
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm text-slate-300 mb-1.5">Prix/litre (FCFA)</label>
                   <input
@@ -645,10 +672,18 @@ export default function CarburantPage() {
                   />
                 </div>
               </div>
-              {form.litres && form.prixLitre && (
+
+              {/* Résumé calculé */}
+              {form.saisieMode === 'litres' && form.litres && form.prixLitre && (
                 <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex items-center justify-between">
                   <span className="text-blue-300 text-sm">Coût total calculé</span>
                   <span className="text-white font-bold">{formatCFA(parseFloat(coutCalcule))}</span>
+                </div>
+              )}
+              {form.saisieMode === 'montant' && form.montant && form.prixLitre && litresCalcules !== null && (
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex items-center justify-between">
+                  <span className="text-blue-300 text-sm">Litres équivalents</span>
+                  <span className="text-white font-bold">{litresCalcules.toFixed(2)} L</span>
                 </div>
               )}
               <div>
