@@ -258,10 +258,14 @@ export default function CarburantPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true); setError('')
+    // Si mode montant, on calcule les litres avant d'envoyer
+    const litresEnvoyes = form.saisieMode === 'montant' && form.montant && form.prixLitre
+      ? (parseFloat(form.montant) / parseFloat(form.prixLitre)).toFixed(2)
+      : form.litres
     const res = await fetch('/api/carburant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ vehiculeId: form.vehiculeId, litres: form.litres, prixLitre: form.prixLitre, date: form.date, notes: form.notes, forcer: form.forcer }),
+      body: JSON.stringify({ vehiculeId: form.vehiculeId, litres: litresEnvoyes, prixLitre: form.prixLitre, date: form.date, notes: form.notes, forcer: form.forcer }),
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error || 'Erreur') } else {
