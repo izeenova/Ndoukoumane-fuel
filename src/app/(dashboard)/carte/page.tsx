@@ -44,6 +44,10 @@ export default function CartePage() {
   const [showReset, setShowReset]       = useState(false)
   const [resetting, setResetting]       = useState(false)
   const [deletingId, setDeletingId]     = useState<string | null>(null)
+  const [historique, setHistorique]     = useState<Transaction[]>([])
+  const [loadingHist, setLoadingHist]   = useState(false)
+  const [histDateDebut, setHistDateDebut] = useState('')
+  const [histDateFin, setHistDateFin]   = useState('')
 
   const fetchBudget = useCallback(async () => {
     setLoading(true)
