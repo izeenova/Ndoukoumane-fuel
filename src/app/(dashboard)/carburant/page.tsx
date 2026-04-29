@@ -157,6 +157,11 @@ export default function CarburantPage() {
   const [budgetEnAlerte, setBudgetEnAlerte] = useState(false)
   const [suppressions, setSuppressions]     = useState<{ id: string; description: string; montant: number; createdAt: string; createdBy: { name: string } }[]>([])
   const [showSuppressions, setShowSuppressions] = useState(false)
+  const [editItem, setEditItem]   = useState<Sortie | null>(null)
+  const [showEdit, setShowEdit]   = useState(false)
+  const [editForm, setEditForm]   = useState({ litres: '', prixLitre: '', date: '', notes: '' })
+  const [editSubmitting, setEditSubmitting] = useState(false)
+  const [editError, setEditError] = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
