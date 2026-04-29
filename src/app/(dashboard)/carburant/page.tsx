@@ -285,6 +285,33 @@ export default function CarburantPage() {
     setSuppressions(Array.isArray(data) ? data : [])
   }
 
+  const openEdit = (s: Sortie) => {
+    setEditItem(s)
+    setEditForm({
+      litres:    s.litres.toString(),
+      prixLitre: s.prixLitre.toString(),
+      date:      s.date ? new Date(s.date).toISOString().slice(0, 16) : '',
+      notes:     s.notes || '',
+    })
+    setEditError('')
+    setShowEdit(true)
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editItem) return
+    setEditSubmitting(true); setEditError('')
+    const res = await fetch(`/api/carburant/${editItem.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editForm),
+    })
+    const data = await res.json()
+    if (!res.ok) { setEditError(data.error || 'Erreur') }
+    else { setShowEdit(false); fetchData(); fetchBudget() }
+    setEditSubmitting(false)
+  }
+
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer cette sortie carburant ? Le montant sera remboursé sur le budget carte essence.')) return
     await fetch(`/api/carburant/${id}`, { method: 'DELETE' })
