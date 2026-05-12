@@ -21,11 +21,12 @@ interface Budget {
 
 interface Transaction {
   id: string
-  type: 'RECHARGE' | 'CARBURANT' | 'VIDANGE'
+  type: 'RECHARGE' | 'CARBURANT' | 'VIDANGE' | 'FACTURE'
   date: string
   montant: number
   description: string
   createdBy?: string
+  soldePrecedent: number
   soldeCumul: number
 }
 
