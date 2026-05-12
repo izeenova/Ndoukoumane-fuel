@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    const { numero, vehiculeId, date, notes, lignes } = await req.json()
+    const { numero, vehiculeId, date, notes, lignes, pieceJointe, pieceJointeNom, pieceJointeType } = await req.json()
 
     if (!numero?.trim())  return NextResponse.json({ error: 'Le numéro de facture est obligatoire' }, { status: 400 })
     if (!vehiculeId)      return NextResponse.json({ error: 'Le véhicule est obligatoire' }, { status: 400 })
