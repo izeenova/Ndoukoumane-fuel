@@ -204,18 +204,21 @@ enum TypeLigne {
 }
 
 model Facture {
-  id          String         @id @default(cuid())
-  numero      String         @unique
-  vehiculeId  String
-  vehicule    Vehicule       @relation(fields: [vehiculeId], references: [id])
-  date        DateTime       @default(now())
-  notes       String?
-  total       Float          // somme de toutes les lignes
-  lignes      LigneFacture[]
-  createdById String
-  createdBy   User           @relation("FactureCreatedBy", fields: [createdById], references: [id])
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id           String         @id @default(cuid())
+  numero       String         @unique
+  vehiculeId   String
+  vehicule     Vehicule       @relation(fields: [vehiculeId], references: [id])
+  date         DateTime       @default(now())
+  notes        String?
+  total        Float          // somme de toutes les lignes
+  pieceJointe  String?        // URL Vercel Blob — photo ou PDF de la facture physique
+  pieceJointeNom String?      // Nom original du fichier
+  pieceJointeType String?     // MIME type : image/jpeg, application/pdf…
+  lignes       LigneFacture[]
+  createdById  String
+  createdBy    User           @relation("FactureCreatedBy", fields: [createdById], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 }
 
 model LigneFacture {
