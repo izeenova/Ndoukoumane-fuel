@@ -87,10 +87,12 @@ export default function CartePage() {
   }
 
   const handleDeleteRecharge = async (id: string) => {
+    if (!confirm('Supprimer cette recharge ? Le montant sera déduit du solde actuel.')) return
     setDeletingId(id)
     await fetch(`/api/budget/recharge/${id}`, { method: 'DELETE' })
     setDeletingId(null)
     fetchBudget()
+    fetchHistorique()
   }
 
   const handleReset = async () => {
