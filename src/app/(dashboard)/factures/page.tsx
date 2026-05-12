@@ -1,7 +1,19 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import { formatCFA, formatDate } from '@/lib/utils'
+import type { FacturePDFData } from '@/components/FacturePDFDocument'
+
+// Import dynamique — react-pdf ne supporte pas le SSR
+const FacturePreviewModal = dynamic(
+  () => import('@/components/FacturePDFActions').then(m => m.FacturePreviewModal),
+  { ssr: false, loading: () => null }
+)
+const FactureDownloadButton = dynamic(
+  () => import('@/components/FacturePDFActions').then(m => m.FactureDownloadButton),
+  { ssr: false, loading: () => <span className="text-slate-600 text-xs">...</span> }
+)
 
 interface LigneFacture {
   id: string
