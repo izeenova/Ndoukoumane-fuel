@@ -181,7 +181,7 @@ export default function FacturesPage() {
   const removeLigne = (idx: number) => setLignes(prev => prev.filter((_, i) => i !== idx))
 
   const totalFacture = lignes.reduce((s, l) => {
-    const m = parseFloat(l.montant as unknown as string)
+    const m = parseFloat(l.montant)
     return s + (isNaN(m) ? 0 : m)
   }, 0)
 
