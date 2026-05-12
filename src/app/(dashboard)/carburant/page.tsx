@@ -270,7 +270,16 @@ export default function CarburantPage() {
     const res = await fetch('/api/carburant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ vehiculeId: form.vehiculeId, litres: litresEnvoyes, prixLitre: form.prixLitre, date: form.date, notes: form.notes, forcer: form.forcer }),
+      body: JSON.stringify({
+        vehiculeId: form.vehiculeId,
+        litres: litresEnvoyes,
+        prixLitre: form.prixLitre,
+        date: form.date,
+        notes: form.notes,
+        forcer: form.forcer,
+        // En mode montant, transmettre le montant exact pour éviter l'erreur d'arrondi
+        ...(form.saisieMode === 'montant' && form.montant ? { montantExact: form.montant } : {}),
+      }),
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error || 'Erreur') } else {
