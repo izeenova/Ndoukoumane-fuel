@@ -162,15 +162,15 @@ export default function FacturesPage() {
   }, [])
 
   // Calcul automatique du montant d'une ligne quand quantite × prixUnitaire
-  const updateLigne = (idx: number, field: string, value: string) => {
+  const updateLigne = (idx: number, field: keyof LigneForm, value: string) => {
     setLignes(prev => {
       const next = [...prev]
-      const l = { ...next[idx], [field]: value }
+      const l: LigneForm = { ...next[idx], [field]: value }
       // Recalculer montant si quantite et prixUnitaire renseignés
       if ((field === 'quantite' || field === 'prixUnitaire') && l.quantite && l.prixUnitaire) {
-        const q = parseFloat(l.quantite as unknown as string)
-        const p = parseFloat(l.prixUnitaire as unknown as string)
-        if (!isNaN(q) && !isNaN(p)) l.montant = String(Math.round(q * p)) as unknown as string
+        const q = parseFloat(l.quantite)
+        const p = parseFloat(l.prixUnitaire)
+        if (!isNaN(q) && !isNaN(p)) l.montant = String(Math.round(q * p))
       }
       next[idx] = l
       return next
