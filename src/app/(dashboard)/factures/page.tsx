@@ -544,7 +544,7 @@ export default function FacturesPage() {
                         {/* Montant */}
                         <div className="sm:col-span-2">
                           <label className="block text-xs text-slate-400 mb-1">Montant (FCFA) *</label>
-                          <input type="number" step="1" min="1" value={l.montant as unknown as string}
+                          <input type="number" step="1" min="1" value={l.montant}
                             onChange={e => updateLigne(idx, 'montant', e.target.value)} required
                             placeholder="Montant exact de cette ligne"
                             className="w-full bg-[#1E293B] border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono" />
