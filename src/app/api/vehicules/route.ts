@@ -20,6 +20,8 @@ export async function GET(req: NextRequest) {
             { immatriculation: { contains: search, mode: 'insensitive' } },
             { marque:          { contains: search, mode: 'insensitive' } },
             { modele:          { contains: search, mode: 'insensitive' } },
+            { personnelAssigne: { nom:    { contains: search, mode: 'insensitive' } } },
+            { personnelAssigne: { prenom: { contains: search, mode: 'insensitive' } } },
           ]} : {},
           type   ? { type:   type   as 'CAMION' | 'VOITURE' } : {},
           statut ? { statut: statut as 'ACTIF' | 'EN_REPARATION' | 'HORS_SERVICE' } : {},
