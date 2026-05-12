@@ -415,7 +415,7 @@ export default function FacturesPage() {
                   </div>
 
                   {isExpanded && (
-                    <div className="px-5 pb-4 ml-8">
+                    <div className="px-5 pb-4 ml-8 space-y-3">
                       <div className="bg-[#0F172A] rounded-xl border border-slate-800 overflow-hidden">
                         <table className="w-full text-sm">
                           <thead>
