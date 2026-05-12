@@ -137,7 +137,7 @@ export default function FacturesPage() {
   const [formVehicule, setFormVehicule] = useState('')
   const [formDate, setFormDate]         = useState('')
   const [formNotes, setFormNotes]       = useState('')
-  const [lignes, setLignes]             = useState([emptyLigne()])
+  const [lignes, setLignes]             = useState<LigneForm[]>([emptyLigne()])
   const [deletingId, setDeletingId]     = useState<string | null>(null)
 
   const fetchFactures = useCallback(async () => {
