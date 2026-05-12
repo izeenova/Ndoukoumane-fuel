@@ -666,24 +666,45 @@ export default function FacturesPage() {
                 </div>
               </div>
 
+              {/* Pièce jointe — obligatoire avant validation */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="text-sm text-slate-300 font-medium">Pièce jointe (facture physique)</label>
+                  <span className="bg-orange-500/10 text-orange-400 text-[10px] px-2 py-0.5 rounded-full border border-orange-500/20 font-medium">Obligatoire</span>
+                </div>
+                <p className="text-slate-500 text-xs mb-3">
+                  Prenez en photo ou scannez la facture papier avant de valider.
+                </p>
+                <PieceJointeUpload
+                  value={pieceJointe}
+                  onChange={setPieceJointe}
+                  required
+                />
+              </div>
+
               {/* Total */}
               {totalFacture > 0 && (
-                <div className="bg-purple-600/10 border border-purple-500/30 rounded-xl p-4 flex items-center justify-between">
+                <div className={`rounded-xl p-4 flex items-center justify-between border transition-colors ${
+                  pieceJointe
+                    ? 'bg-purple-600/10 border-purple-500/30'
+                    : 'bg-slate-800/50 border-slate-700/50'
+                }`}>
                   <div>
-                    <p className="text-purple-400 text-sm font-medium">Total facture</p>
-                    <p className="text-slate-400 text-xs mt-0.5">{lignes.length} ligne{lignes.length > 1 ? 's' : ''} · déduit de la carte essence</p>
+                    <p className={`text-sm font-medium ${pieceJointe ? 'text-purple-400' : 'text-slate-500'}`}>Total facture</p>
+                    <p className="text-slate-500 text-xs mt-0.5">{lignes.length} ligne{lignes.length > 1 ? 's' : ''} · déduit de la carte essence</p>
                   </div>
-                  <p className="text-purple-300 font-bold text-xl">{formatCFA(totalFacture)}</p>
+                  <p className={`font-bold text-xl ${pieceJointe ? 'text-purple-300' : 'text-slate-500'}`}>{formatCFA(totalFacture)}</p>
                 </div>
               )}
 
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => { setShowModal(false); resetForm() }}
                   className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl text-sm font-medium">Annuler</button>
-                <button type="submit" disabled={submitting || !formVehicule || totalFacture <= 0}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+                <button type="submit"
+                  disabled={submitting || !formVehicule || totalFacture <= 0 || !pieceJointe}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
                   {submitting && <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>}
-                  {submitting ? 'Enregistrement...' : `Créer — ${formatCFA(totalFacture)}`}
+                  {submitting ? 'Enregistrement...' : !pieceJointe ? '📎 Joindre la facture d\'abord' : `Valider — ${formatCFA(totalFacture)}`}
                 </button>
               </div>
             </form>
