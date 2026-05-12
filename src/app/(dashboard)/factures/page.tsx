@@ -133,6 +133,7 @@ export default function FacturesPage() {
   const [budgetSolde, setBudgetSolde]   = useState<number | null>(null)
   const [expanded, setExpanded]         = useState<string | null>(null)
   const [deletingId, setDeletingId]     = useState<string | null>(null)
+  const [previewFacture, setPreviewFacture] = useState<Facture | null>(null)
 
   // Modal
   const [showModal, setShowModal]         = useState(false)
