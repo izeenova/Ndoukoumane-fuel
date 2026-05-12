@@ -25,6 +25,7 @@ model User {
   recharges        RechargeBudget[]  @relation("RechargeCreatedBy")
   suppressions     SuppressionLog[]  @relation("SuppressionLogCreatedBy")
   vidangesCreees   Vidange[]         @relation("VidangeCreatedBy")
+  facturesCreees   Facture[]         @relation("FactureCreatedBy")
 }
 
 enum RoleUser {
