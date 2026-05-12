@@ -242,30 +242,56 @@ export default function CartePage() {
               <div className="divide-y divide-slate-800/60">
                 {historique.map(t => {
                   const isEntree = t.montant > 0
-                  const badgeStyle = t.type === 'RECHARGE'
-                    ? 'bg-green-500/20 text-green-400'
-                    : t.type === 'CARBURANT'
-                    ? 'bg-blue-500/20 text-blue-400'
-                    : 'bg-amber-500/20 text-amber-400'
-                  const badgeLabel = t.type === 'RECHARGE' ? 'Recharge' : t.type === 'CARBURANT' ? 'Carburant' : 'Vidange'
+                  const badgeStyle =
+                    t.type === 'RECHARGE' ? 'bg-green-500/20 text-green-400' :
+                    t.type === 'CARBURANT' ? 'bg-blue-500/20 text-blue-400' :
+                    t.type === 'FACTURE'   ? 'bg-purple-500/20 text-purple-400' :
+                    'bg-amber-500/20 text-amber-400'
+                  const badgeLabel =
+                    t.type === 'RECHARGE'  ? 'Recharge' :
+                    t.type === 'CARBURANT' ? 'Carburant' :
+                    t.type === 'FACTURE'   ? 'Facture' :
+                    'Vidange'
 
                   return (
                     <div key={`${t.type}-${t.id}`} className="px-5 py-3.5 flex items-center justify-between gap-4">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-0.5">
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeStyle}`}>{badgeLabel}</span>
-                          {t.type === 'RECHARGE' && t.createdBy && (
+                          {t.createdBy && (
                             <span className="text-slate-500 text-xs">{t.createdBy}</span>
                           )}
                         </div>
                         <p className="text-slate-300 text-sm truncate">{t.description}</p>
                         <p className="text-slate-500 text-xs mt-0.5">{formatDate(t.date)}</p>
                       </div>
-                      <div className="flex-shrink-0 text-right">
-                        <p className={`font-bold text-sm ${isEntree ? 'text-green-400' : 'text-red-400'}`}>
-                          {isEntree ? '+' : ''}{formatCFA(t.montant)}
-                        </p>
-                        <p className="text-slate-500 text-xs mt-0.5">Solde : {formatCFA(t.soldeCumul)}</p>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="text-right">
+                          <p className={`font-bold text-sm ${isEntree ? 'text-green-400' : 'text-red-400'}`}>
+                            {isEntree ? '+' : ''}{formatCFA(t.montant)}
+                          </p>
+                          <p className="text-slate-600 text-xs mt-0.5">
+                            <span className="text-slate-500">{formatCFA(t.soldePrecedent)}</span>
+                            <span className="mx-1">→</span>
+                            <span className={t.soldeCumul < 0 ? 'text-red-400' : 'text-slate-400'}>{formatCFA(t.soldeCumul)}</span>
+                          </p>
+                        </div>
+                        {t.type === 'RECHARGE' && (
+                          <button
+                            onClick={() => handleDeleteRecharge(t.id)}
+                            disabled={deletingId === t.id}
+                            className="text-slate-600 hover:text-red-400 transition-colors disabled:opacity-40 flex-shrink-0"
+                            title="Supprimer cette recharge"
+                          >
+                            {deletingId === t.id ? (
+                              <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
                       </div>
                     </div>
                   )
