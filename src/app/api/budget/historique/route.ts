@@ -15,19 +15,14 @@ export async function GET(req: NextRequest) {
     const dateDebut = searchParams.get('dateDebut') || ''
     const dateFin   = searchParams.get('dateFin')   || ''
 
-    const dateFilter: any = {}
-    if (dateDebut) dateFilter.gte = new Date(dateDebut)
-    if (dateFin)   dateFilter.lte = new Date(dateFin + 'T23:59:59')
-
-    // Récupérer les 3 types de transactions en parallèle
-    const [recharges, sorties, vidanges] = await Promise.all([
+    // On récupère TOUTES les transactions sans filtre date
+    // pour calculer un solde cumulatif correct même avec un filtre d'affichage
+    const [recharges, sorties, vidanges, factures] = await Promise.all([
       prisma.rechargeBudget.findMany({
-        where: dateDebut || dateFin ? { createdAt: dateFilter } : {},
         include: { createdBy: { select: { name: true } } },
         orderBy: { createdAt: 'asc' },
       }),
       prisma.sortieCarburant.findMany({
-        where: dateDebut || dateFin ? { date: dateFilter } : {},
         include: {
           vehicule: { select: { immatriculation: true, marque: true, modele: true } },
           personnel: { select: { prenom: true, nom: true } },
@@ -35,18 +30,26 @@ export async function GET(req: NextRequest) {
         orderBy: { date: 'asc' },
       }),
       prisma.vidange.findMany({
-        where: dateDebut || dateFin ? { date: dateFilter } : {},
         include: {
           vehicule: { select: { immatriculation: true, marque: true, modele: true } },
         },
         orderBy: { date: 'asc' },
       }),
+      // Inclure les factures si le modèle existe
+      (prisma as any).facture?.findMany({
+        include: {
+          vehicule: { select: { immatriculation: true, marque: true, modele: true } },
+          lignes:   true,
+          createdBy: { select: { name: true } },
+        },
+        orderBy: { date: 'asc' },
+      }).catch(() => []) ?? Promise.resolve([]),
     ])
 
     // Fusionner toutes les transactions dans un tableau unifié
     const transactions: {
       id: string
-      type: 'RECHARGE' | 'CARBURANT' | 'VIDANGE'
+      type: 'RECHARGE' | 'CARBURANT' | 'VIDANGE' | 'FACTURE'
       date: Date
       montant: number   // positif = entrée, négatif = sortie
       description: string
@@ -84,20 +87,42 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // Trier par date croissante pour calculer le solde courant
+    for (const f of (factures as any[])) {
+      transactions.push({
+        id: f.id,
+        type: 'FACTURE',
+        date: f.date,
+        montant: -f.total,
+        description: `Facture ${f.numero} — ${f.vehicule.immatriculation} ${f.vehicule.marque} ${f.vehicule.modele}`,
+        createdBy: f.createdBy?.name,
+      })
+    }
+
+    // Trier par date croissante pour calculer le solde cumulatif dans le bon ordre
     transactions.sort((a, b) => a.date.getTime() - b.date.getTime())
 
-    // Calculer le solde cumulatif
+    // Calculer le solde cumulatif sur TOUTES les transactions (sans filtre)
     let solde = 0
     const withSolde = transactions.map(t => {
+      const soldePrecedent = solde
       solde += t.montant
-      return { ...t, soldeCumul: solde }
+      return { ...t, soldePrecedent, soldeCumul: solde }
+    })
+
+    // Appliquer le filtre de date uniquement pour l'affichage
+    const startDate = dateDebut ? new Date(dateDebut)                    : null
+    const endDate   = dateFin   ? new Date(dateFin + 'T23:59:59')        : null
+
+    const filtered = withSolde.filter(t => {
+      if (startDate && t.date < startDate) return false
+      if (endDate   && t.date > endDate)   return false
+      return true
     })
 
     // Retourner en ordre décroissant (plus récent en premier)
-    withSolde.reverse()
+    filtered.reverse()
 
-    return NextResponse.json(withSolde)
+    return NextResponse.json(filtered)
   } catch (error) {
     console.error('GET /api/budget/historique:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
