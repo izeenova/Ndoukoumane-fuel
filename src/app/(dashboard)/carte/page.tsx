@@ -220,18 +220,39 @@ export default function CartePage() {
 
           {/* Historique complet des mouvements */}
           <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <h3 className="text-white font-semibold text-sm">Historique des mouvements</h3>
-              <div className="flex items-center gap-2 flex-wrap">
-                <input type="date" value={histDateDebut} onChange={e => setHistDateDebut(e.target.value)}
-                  className="bg-[#0F172A] border border-slate-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <span className="text-slate-500 text-xs">→</span>
-                <input type="date" value={histDateFin} onChange={e => setHistDateFin(e.target.value)}
-                  className="bg-[#0F172A] border border-slate-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                {(histDateDebut || histDateFin) && (
-                  <button onClick={() => { setHistDateDebut(''); setHistDateFin('') }}
-                    className="text-slate-500 hover:text-white text-xs px-2 py-1.5 rounded-lg border border-slate-700 hover:border-slate-500">✕</button>
-                )}
+            <div className="px-5 py-4 border-b border-slate-700/50 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h3 className="text-white font-semibold text-sm">Historique des mouvements</h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input type="date" value={histDateDebut} onChange={e => setHistDateDebut(e.target.value)}
+                    className="bg-[#0F172A] border border-slate-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <span className="text-slate-500 text-xs">→</span>
+                  <input type="date" value={histDateFin} onChange={e => setHistDateFin(e.target.value)}
+                    className="bg-[#0F172A] border border-slate-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  {(histDateDebut || histDateFin) && (
+                    <button onClick={() => { setHistDateDebut(''); setHistDateFin('') }}
+                      className="text-slate-500 hover:text-white text-xs px-2 py-1.5 rounded-lg border border-slate-700 hover:border-slate-500">✕</button>
+                  )}
+                </div>
+              </div>
+              {/* Filtre par type de mouvement */}
+              <div className="flex gap-1.5">
+                {([
+                  { key: 'TOUS',    label: 'Tous les mouvements' },
+                  { key: 'ENTREES', label: '↑ Entrées seulement' },
+                  { key: 'SORTIES', label: '↓ Sorties seulement' },
+                ] as const).map(f => (
+                  <button key={f.key} onClick={() => setHistTypeFilter(f.key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      histTypeFilter === f.key
+                        ? f.key === 'ENTREES' ? 'bg-green-600/20 text-green-400 border border-green-500/40'
+                        : f.key === 'SORTIES' ? 'bg-red-600/20 text-red-400 border border-red-500/40'
+                        : 'bg-blue-600/20 text-blue-400 border border-blue-500/40'
+                        : 'bg-[#0F172A] text-slate-500 border border-slate-700 hover:text-slate-300'
+                    }`}>
+                    {f.label}
+                  </button>
+                ))}
               </div>
             </div>
 
