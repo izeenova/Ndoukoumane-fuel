@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { formatCFA, formatDate } from '@/lib/utils'
 import type { FacturePDFData } from '@/components/FacturePDFDocument'
+import { PieceJointeUpload, type PieceJointeResult } from '@/components/PieceJointeUpload'
 
 // Import dynamique — react-pdf ne supporte pas le SSR
 const FacturePreviewModal = dynamic(
