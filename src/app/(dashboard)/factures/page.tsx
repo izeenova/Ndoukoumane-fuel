@@ -507,7 +507,7 @@ export default function FacturesPage() {
                         {/* Type */}
                         <div>
                           <label className="block text-xs text-slate-400 mb-1">Type</label>
-                          <select value={l.type} onChange={e => updateLigne(idx, 'type', e.target.value)}
+                          <select value={l.type} onChange={e => updateLigne(idx, 'type', e.target.value as 'CARBURANT' | 'VIDANGE' | 'AUTRE')}
                             className="w-full bg-[#1E293B] border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
                             <option value="CARBURANT">Carburant</option>
                             <option value="VIDANGE">Vidange</option>
