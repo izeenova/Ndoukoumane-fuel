@@ -44,7 +44,16 @@ const TYPE_COLORS: Record<string, string> = {
   AUTRE:     'bg-slate-500/20 text-slate-400',
 }
 
-const emptyLigne = () => ({ type: 'AUTRE' as const, description: '', quantite: '', prixUnitaire: '', montant: '', notes: '' })
+interface LigneForm {
+  type: 'CARBURANT' | 'VIDANGE' | 'AUTRE'
+  description: string
+  quantite: string
+  prixUnitaire: string
+  montant: string
+  notes: string
+}
+
+const emptyLigne = (): LigneForm => ({ type: 'AUTRE', description: '', quantite: '', prixUnitaire: '', montant: '', notes: '' })
 
 // Combobox véhicule
 function VehiculeSelect({ vehicules, value, onChange }: {
