@@ -249,7 +249,8 @@ export default function FacturesPage() {
 
   const resetForm = () => {
     setFormNumero(''); setFormVehicule(''); setFormVehiculeObj(null)
-    setFormDate(''); setFormNotes(''); setLignes([emptyLigne()]); setError('')
+    setFormDate(''); setFormNotes(''); setLignes([emptyLigne()])
+    setPieceJointe(null); setError('')
   }
 
   const handleDelete = async (id: string) => {
