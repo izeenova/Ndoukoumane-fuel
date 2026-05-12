@@ -219,15 +219,16 @@ model Facture {
 }
 
 model LigneFacture {
-  id           String     @id @default(cuid())
-  factureId    String
-  facture      Facture    @relation(fields: [factureId], references: [id], onDelete: Cascade)
-  type         TypeLigne  @default(AUTRE)
-  description  String
-  quantite     Float?     // ex: nombre de litres pour carburant
-  prixUnitaire Float?     // ex: prix/litre pour carburant
-  montant      Float      // montant de cette ligne (= quantite * prixUnitaire ou saisi directement)
-  notes        String?
+  id            String         @id @default(cuid())
+  factureId     String
+  facture       Facture        @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  type          TypeLigne      @default(AUTRE)
+  typeCarburant TypeCarburant? // ESSENCE | GASOIL — renseigné uniquement si type = CARBURANT
+  description   String
+  quantite      Float?         // ex: litres pour carburant
+  prixUnitaire  Float?         // ex: prix/litre
+  montant       Float          // montant exact de cette ligne
+  notes         String?
 }
 
 model SuppressionLog {
