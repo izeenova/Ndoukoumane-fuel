@@ -85,11 +85,14 @@ export async function POST(req: NextRequest) {
     const facture = await prisma.$transaction(async (tx) => {
       const f = await tx.facture.create({
         data: {
-          numero:     numero.trim(),
+          numero:          numero.trim(),
           vehiculeId,
-          date:       date ? new Date(date) : new Date(),
-          notes:      notes?.trim() || null,
+          date:            date ? new Date(date) : new Date(),
+          notes:           notes?.trim() || null,
           total,
+          pieceJointe:     pieceJointe     || null,
+          pieceJointeNom:  pieceJointeNom  || null,
+          pieceJointeType: pieceJointeType || null,
           createdById: (session.user as { id: string }).id,
           lignes: {
             create: lignes.map((l: any) => ({
