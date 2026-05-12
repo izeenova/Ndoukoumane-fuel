@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { vehiculeId, litres, prixLitre, date, notes, forcer } = body
+    const { vehiculeId, litres, prixLitre, date, notes, forcer, montantExact } = body
 
     if (!vehiculeId || !litres || !prixLitre) {
       return NextResponse.json({ error: 'Champs obligatoires manquants' }, { status: 400 })
