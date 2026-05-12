@@ -474,6 +474,14 @@ export default function FacturesPage() {
         )}
       </div>
 
+      {/* ── Modal prévisualisation PDF ── */}
+      {previewFacture && (
+        <FacturePreviewModal
+          facture={previewFacture}
+          onClose={() => setPreviewFacture(null)}
+        />
+      )}
+
       {/* ── Modal création ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-y-auto">
