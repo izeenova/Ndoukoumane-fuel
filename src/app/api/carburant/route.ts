@@ -120,7 +120,9 @@ export async function POST(req: NextRequest) {
 
     const litresNum = parseFloat(litres)
     const prixLitreNum = parseFloat(prixLitre)
-    const coutTotal = litresNum * prixLitreNum
+    // Si l'utilisateur a saisi directement un montant (mode FCFA), on l'utilise tel quel
+    // pour éviter les erreurs d'arrondi dues à la conversion litres ↔ FCFA
+    const coutTotal = montantExact ? parseFloat(montantExact) : litresNum * prixLitreNum
 
     // Transaction : créer sortie + maj véhicule + déduire du budget
     const sortie = await prisma.$transaction(async (tx) => {
