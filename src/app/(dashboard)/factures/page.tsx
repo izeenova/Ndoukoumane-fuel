@@ -147,6 +147,7 @@ export default function FacturesPage() {
   const [formDate, setFormDate]           = useState('')
   const [formNotes, setFormNotes]         = useState('')
   const [lignes, setLignes]               = useState<LigneForm[]>([emptyLigne()])
+  const [pieceJointe, setPieceJointe]     = useState<PieceJointeResult | null>(null)
 
   const fetchFactures = useCallback(async () => {
     setLoading(true)
