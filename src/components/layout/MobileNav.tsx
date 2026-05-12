@@ -22,6 +22,7 @@ const navItems = [
   { href: '/vidanges', label: 'Vidanges', permission: canAccessVidanges },
   { href: '/stats', label: 'Statistiques', permission: canAccessStats },
   { href: '/alertes', label: 'Alertes', permission: canAccessAlertes },
+  { href: '/factures', label: 'Factures', permission: canAccessCarburant },
   { href: '/carte', label: 'Carte Essence', permission: (role: string) => role === 'ADMIN' },
 ]
 
