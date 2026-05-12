@@ -195,6 +195,41 @@ model Vidange {
   updatedAt   DateTime  @updatedAt
 }
 
+// ─── Factures (groupement carburant + vidange + autre sous un n° de facture) ──
+
+enum TypeLigne {
+  CARBURANT
+  VIDANGE
+  AUTRE
+}
+
+model Facture {
+  id          String         @id @default(cuid())
+  numero      String         @unique
+  vehiculeId  String
+  vehicule    Vehicule       @relation(fields: [vehiculeId], references: [id])
+  date        DateTime       @default(now())
+  notes       String?
+  total       Float          // somme de toutes les lignes
+  lignes      LigneFacture[]
+  createdById String
+  createdBy   User           @relation("FactureCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model LigneFacture {
+  id           String     @id @default(cuid())
+  factureId    String
+  facture      Facture    @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  type         TypeLigne  @default(AUTRE)
+  description  String
+  quantite     Float?     // ex: nombre de litres pour carburant
+  prixUnitaire Float?     // ex: prix/litre pour carburant
+  montant      Float      // montant de cette ligne (= quantite * prixUnitaire ou saisi directement)
+  notes        String?
+}
+
 model SuppressionLog {
   id          String   @id @default(cuid())
   type        String
