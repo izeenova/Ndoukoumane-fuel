@@ -27,7 +27,9 @@ export async function GET(req: NextRequest) {
       where.OR = [
         { numero: { contains: search, mode: 'insensitive' } },
         { vehicule: { immatriculation: { contains: search, mode: 'insensitive' } } },
-        { vehicule: { marque: { contains: search, mode: 'insensitive' } } },
+        { vehicule: { marque:          { contains: search, mode: 'insensitive' } } },
+        { vehicule: { personnelAssigne: { nom:    { contains: search, mode: 'insensitive' } } } },
+        { vehicule: { personnelAssigne: { prenom: { contains: search, mode: 'insensitive' } } } },
         { notes: { contains: search, mode: 'insensitive' } },
       ]
     }
