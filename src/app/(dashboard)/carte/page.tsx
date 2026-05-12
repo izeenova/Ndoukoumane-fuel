@@ -258,11 +258,19 @@ export default function CartePage() {
 
             {loadingHist ? (
               <p className="text-center py-10 text-slate-500 text-sm">Chargement...</p>
-            ) : historique.length === 0 ? (
+            ) : historique.filter(t =>
+                histTypeFilter === 'TOUS' ? true :
+                histTypeFilter === 'ENTREES' ? t.montant > 0 :
+                t.montant < 0
+              ).length === 0 ? (
               <p className="text-center py-10 text-slate-500 text-sm">Aucun mouvement sur cette période</p>
             ) : (
               <div className="divide-y divide-slate-800/60">
-                {historique.map(t => {
+                {historique.filter(t =>
+                  histTypeFilter === 'TOUS' ? true :
+                  histTypeFilter === 'ENTREES' ? t.montant > 0 :
+                  t.montant < 0
+                ).map(t => {
                   const isEntree = t.montant > 0
                   const badgeStyle =
                     t.type === 'RECHARGE' ? 'bg-green-500/20 text-green-400' :
