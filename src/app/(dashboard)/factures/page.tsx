@@ -15,32 +15,8 @@ const FactureDownloadButton = dynamic(
   { ssr: false, loading: () => <span className="text-slate-600 text-xs">...</span> }
 )
 
-interface LigneFacture {
-  id: string
-  type: 'CARBURANT' | 'VIDANGE' | 'AUTRE'
-  typeCarburant: 'ESSENCE' | 'GASOIL' | null
-  description: string
-  quantite: number | null
-  prixUnitaire: number | null
-  montant: number
-  notes: string | null
-}
-
-interface Facture {
-  id: string
-  numero: string
-  date: string
-  notes: string | null
-  total: number
-  vehicule: {
-    immatriculation: string
-    marque: string
-    modele: string
-    personnelAssigne: { prenom: string; nom: string } | null
-  }
-  lignes: LigneFacture[]
-  createdBy: { name: string }
-}
+// Facture = FacturePDFData (réutilisation du type pour le PDF)
+type Facture = FacturePDFData
 
 interface Vehicule {
   id: string
