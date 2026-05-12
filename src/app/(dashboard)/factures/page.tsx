@@ -550,7 +550,7 @@ export default function FacturesPage() {
                             className="w-full bg-[#1E293B] border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono" />
                           {l.quantite && l.prixUnitaire && (
                             <p className="text-xs text-purple-400 mt-1">
-                              Auto-calculé : {parseFloat(l.quantite as unknown as string) || 0} × {parseFloat(l.prixUnitaire as unknown as string) || 0} = {Math.round((parseFloat(l.quantite as unknown as string) || 0) * (parseFloat(l.prixUnitaire as unknown as string) || 0)).toLocaleString('fr-FR')} FCFA
+                              Auto-calculé : {parseFloat(l.quantite) || 0} × {parseFloat(l.prixUnitaire) || 0} = {Math.round((parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0)).toLocaleString('fr-FR')} FCFA
                             </p>
                           )}
                         </div>
