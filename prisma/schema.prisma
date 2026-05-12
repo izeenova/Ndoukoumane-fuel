@@ -61,6 +61,7 @@ model Vehicule {
   reparations        Reparation[]
   alerte             AlerteCarburant?
   vidanges           Vidange[]
+  factures           Facture[]
   personnelAssigne   Personnel?      @relation("VehiculeAssigne", fields: [personnelAssigneId], references: [id])
   personnelAssigneId String?         @unique
 }
