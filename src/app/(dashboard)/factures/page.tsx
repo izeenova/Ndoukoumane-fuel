@@ -526,7 +526,7 @@ export default function FacturesPage() {
                           <label className="block text-xs text-slate-400 mb-1">
                             Quantité {l.type === 'CARBURANT' ? '(litres)' : '(optionnel)'}
                           </label>
-                          <input type="number" step="0.01" min="0" value={l.quantite as unknown as string}
+                          <input type="number" step="0.01" min="0" value={l.quantite}
                             onChange={e => updateLigne(idx, 'quantite', e.target.value)}
                             placeholder="ex: 50"
                             className="w-full bg-[#1E293B] border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
