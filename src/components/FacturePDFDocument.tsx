@@ -14,6 +14,9 @@ export interface FacturePDFData {
   date: string
   notes: string | null
   total: number
+  pieceJointe: string | null
+  pieceJointeNom: string | null
+  pieceJointeType: string | null
   vehicule: {
     immatriculation: string
     marque: string
