@@ -222,11 +222,14 @@ export default function FacturesPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        numero:     formNumero,
-        vehiculeId: formVehicule,
-        date:       formDate || undefined,
-        notes:      formNotes || undefined,
-        lignes:     lignes.map(l => ({
+        numero:          formNumero,
+        vehiculeId:      formVehicule,
+        date:            formDate || undefined,
+        notes:           formNotes || undefined,
+        pieceJointe:     pieceJointe?.url      || undefined,
+        pieceJointeNom:  pieceJointe?.nom      || undefined,
+        pieceJointeType: pieceJointe?.type     || undefined,
+        lignes:          lignes.map(l => ({
           type:          l.type,
           typeCarburant: l.type === 'CARBURANT' ? l.typeCarburant : undefined,
           description:   l.description,
