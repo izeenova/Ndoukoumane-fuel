@@ -46,7 +46,7 @@ interface LigneForm {
 }
 
 const emptyLigne = (): LigneForm => ({
-  type: 'AUTRE', typeCarburant: 'ESSENCE', saisieMode: 'litres',
+  type: 'AUTRE', typeCarburant: 'ESSENCE', saisieMode: 'montant',
   description: '', quantite: '', prixUnitaire: '', montant: '', notes: '',
 })
 
@@ -204,21 +204,12 @@ export default function FacturesPage() {
       const l: LigneForm = { ...next[idx], [field]: value }
 
       if (l.type === 'CARBURANT') {
-        if (l.saisieMode === 'litres') {
-          // litres + prixUnitaire → montant
-          if ((field === 'quantite' || field === 'prixUnitaire') && l.quantite && l.prixUnitaire) {
-            const q = parseFloat(l.quantite)
-            const p = parseFloat(l.prixUnitaire)
-            if (!isNaN(q) && !isNaN(p)) l.montant = String(Math.round(q * p))
-          }
-        } else {
-          // montant + prixUnitaire → litres
-          if ((field === 'montant' || field === 'prixUnitaire') && l.montant && l.prixUnitaire) {
-            const m = parseFloat(l.montant)
-            const p = parseFloat(l.prixUnitaire)
-            if (!isNaN(m) && !isNaN(p) && p > 0) {
-              l.quantite = String(Math.round((m / p) * 100) / 100)
-            }
+        // montant + prixUnitaire → litres (auto-calculé)
+        if ((field === 'montant' || field === 'prixUnitaire') && l.montant && l.prixUnitaire) {
+          const m = parseFloat(l.montant)
+          const p = parseFloat(l.prixUnitaire)
+          if (!isNaN(m) && !isNaN(p) && p > 0) {
+            l.quantite = String(Math.round((m / p) * 100) / 100)
           }
         }
       } else {
@@ -235,25 +226,6 @@ export default function FacturesPage() {
     })
   }
 
-  // Changement de mode de saisie (litres ↔ montant) pour une ligne CARBURANT
-  const toggleSaisieMode = (idx: number) => {
-    setLignes(prev => {
-      const next = [...prev]
-      const l = { ...next[idx] }
-      l.saisieMode = l.saisieMode === 'litres' ? 'montant' : 'litres'
-      // Reset les champs calculés
-      if (l.saisieMode === 'montant') {
-        // On passe en mode montant → on efface les litres si auto-calculés
-        l.quantite = ''
-      } else {
-        // On passe en mode litres → on efface le montant si auto-calculé
-        l.montant = ''
-      }
-      next[idx] = l
-      return next
-    })
-  }
-
   const handleLigneTypeChange = (idx: number, type: LigneForm['type']) => {
     setLignes(prev => {
       const next = [...prev]
@@ -261,6 +233,7 @@ export default function FacturesPage() {
       if (type === 'CARBURANT') {
         l.typeCarburant = formVehiculeObj?.typeCarburant || 'ESSENCE'
         if (!l.description) l.description = 'Plein carburant'
+        l.saisieMode = 'montant'
       } else if (type === 'VIDANGE') {
         if (!l.description) l.description = 'Vidange moteur'
         l.saisieMode = 'litres'
@@ -770,17 +743,6 @@ export default function FacturesPage() {
                                 </button>
                               ))}
                             </div>
-                            {/* Mode saisie toggle */}
-                            <div className="flex items-center gap-2 bg-slate-800/50 rounded-lg p-1">
-                              <button type="button" onClick={() => toggleSaisieMode(idx)}
-                                className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${l.saisieMode === 'litres' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>
-                                Litres → Montant
-                              </button>
-                              <button type="button" onClick={() => toggleSaisieMode(idx)}
-                                className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${l.saisieMode === 'montant' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'}`}>
-                                Montant → Litres
-                              </button>
-                            </div>
                           </div>
                         )}
 
@@ -793,40 +755,8 @@ export default function FacturesPage() {
                             className="w-full bg-[#1E293B] border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                         </div>
 
-                        {/* Champs selon le type + mode */}
-                        {l.type === 'CARBURANT' && l.saisieMode === 'litres' && (
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs text-slate-400 mb-1">Litres</label>
-                              <input type="number" step="0.01" min="0" value={l.quantite}
-                                onChange={e => updateLigne(idx, 'quantite', e.target.value)}
-                                placeholder="ex: 50.00"
-                                className="w-full bg-[#1E293B] border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-slate-400 mb-1">Prix/litre (FCFA)</label>
-                              <input type="number" step="1" min="0" value={l.prixUnitaire}
-                                onChange={e => updateLigne(idx, 'prixUnitaire', e.target.value)}
-                                placeholder="ex: 650"
-                                className="w-full bg-[#1E293B] border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                            </div>
-                            {/* Montant calculé */}
-                            <div className="col-span-2">
-                              <label className="block text-xs text-slate-400 mb-1">Montant total (FCFA) *</label>
-                              <input type="number" step="1" min="1" value={l.montant}
-                                onChange={e => updateLigne(idx, 'montant', e.target.value)} required
-                                placeholder="Montant total"
-                                className="w-full bg-[#1E293B] border border-blue-500/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono" />
-                              {l.quantite && l.prixUnitaire && (
-                                <p className="text-xs text-blue-400 mt-1">
-                                  {parseFloat(l.quantite) || 0} L × {parseFloat(l.prixUnitaire) || 0} FCFA/L = {Math.round((parseFloat(l.quantite)||0)*(parseFloat(l.prixUnitaire)||0)).toLocaleString('fr-FR')} FCFA
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {l.type === 'CARBURANT' && l.saisieMode === 'montant' && (
+                        {/* Champs selon le type */}
+                        {l.type === 'CARBURANT' && (
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className="block text-xs text-slate-400 mb-1">Montant total (FCFA) *</label>
@@ -842,7 +772,6 @@ export default function FacturesPage() {
                                 placeholder="ex: 650"
                                 className="w-full bg-[#1E293B] border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                             </div>
-                            {/* Litres calculés */}
                             <div className="col-span-2">
                               <label className="block text-xs text-slate-400 mb-1">Litres correspondants <span className="text-slate-600">(auto-calculé)</span></label>
                               <div className="bg-[#1E293B] border border-purple-500/20 rounded-lg px-3 py-2 text-purple-300 text-sm font-mono">
