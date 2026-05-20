@@ -148,6 +148,8 @@ export default function FacturesPage() {
   const [formNotes, setFormNotes]         = useState('')
   const [lignes, setLignes]               = useState<LigneForm[]>([emptyLigne()])
   const [pieceJointe, setPieceJointe]     = useState<PieceJointeResult | null>(null)
+  const [prixEssence, setPrixEssence]     = useState('650')
+  const [prixGasoil, setPrixGasoil]       = useState('700')
 
   // Édition
   const [editingId, setEditingId]         = useState<string | null>(null)
@@ -232,6 +234,9 @@ export default function FacturesPage() {
       const l = { ...next[idx], type }
       if (type === 'CARBURANT') {
         l.typeCarburant = formVehiculeObj?.typeCarburant || 'ESSENCE'
+        // Auto-remplir le prix/litre selon le type de carburant du véhicule
+        const prix = l.typeCarburant === 'GASOIL' ? prixGasoil : prixEssence
+        l.prixUnitaire = prix
         if (!l.description) l.description = 'Plein carburant'
         l.saisieMode = 'montant'
       } else if (type === 'VIDANGE') {
@@ -287,7 +292,8 @@ export default function FacturesPage() {
       setError(data.error || 'Erreur')
     } else {
       setShowModal(false); resetForm(); fetchFactures()
-      fetch('/api/budget').then(r => r.json()).then(d => { if (d.solde !== undefined) setBudgetSolde(d.solde) })
+    fetch('/api/budget').then(r => r.json()).then(d => { if (d.solde !== undefined) setBudgetSolde(d.solde) })
+    fetch('/api/parametres').then(r => r.json()).then(d => { setPrixEssence(d.prixCarburant || '650'); setPrixGasoil(d.prixGasoil || '700') })
     }
     setSubmitting(false)
   }
@@ -665,7 +671,15 @@ export default function FacturesPage() {
                 <VehiculeSelect
                   vehicules={vehicules}
                   value={formVehicule}
-                  onChange={(id, v) => { setFormVehicule(id); setFormVehiculeObj(v) }}
+                  onChange={(id, v) => {
+                    setFormVehicule(id); setFormVehiculeObj(v)
+                    if (v) {
+                      const prix = v.typeCarburant === 'GASOIL' ? prixGasoil : prixEssence
+                      setLignes(prev => prev.map(l =>
+                        l.type === 'CARBURANT' ? { ...l, typeCarburant: v.typeCarburant, prixUnitaire: prix } : l
+                      ))
+                    }
+                  }}
                 />
                 <input type="hidden" value={formVehicule} required />
               </div>
@@ -757,7 +771,7 @@ export default function FacturesPage() {
 
                         {/* Champs selon le type */}
                         {l.type === 'CARBURANT' && (
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 gap-3">
                             <div>
                               <label className="block text-xs text-slate-400 mb-1">Montant total (FCFA) *</label>
                               <input type="number" step="1" min="1" value={l.montant}
@@ -766,18 +780,11 @@ export default function FacturesPage() {
                                 className="w-full bg-[#1E293B] border border-purple-500/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono" />
                             </div>
                             <div>
-                              <label className="block text-xs text-slate-400 mb-1">Prix/litre (FCFA)</label>
-                              <input type="number" step="1" min="0" value={l.prixUnitaire}
-                                onChange={e => updateLigne(idx, 'prixUnitaire', e.target.value)}
-                                placeholder="ex: 650"
-                                className="w-full bg-[#1E293B] border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
-                            </div>
-                            <div className="col-span-2">
-                              <label className="block text-xs text-slate-400 mb-1">Litres correspondants <span className="text-slate-600">(auto-calculé)</span></label>
+                              <label className="block text-xs text-slate-400 mb-1">Litres correspondants</label>
                               <div className="bg-[#1E293B] border border-purple-500/20 rounded-lg px-3 py-2 text-purple-300 text-sm font-mono">
                                 {l.montant && l.prixUnitaire && parseFloat(l.prixUnitaire) > 0
                                   ? `${Math.round((parseFloat(l.montant)/parseFloat(l.prixUnitaire))*100)/100} L`
-                                  : <span className="text-slate-600">Entrer montant + prix/litre</span>
+                                  : <span className="text-slate-600">Entrer le montant</span>
                                 }
                               </div>
                             </div>
