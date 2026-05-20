@@ -3,32 +3,31 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { cn, canAccessVehicules, canAccessPersonnel, canAccessCarburant, canAccessReparations, canAccessAlertes, canAccessVidanges, getRoleUserLabel } from '@/lib/utils'
+import { cn, getRoleUserLabel } from '@/lib/utils'
+import { canSeeModule } from './Sidebar'
 
 interface MobileNavProps {
-  user: { name: string; email: string; role: string }
+  user: { name: string; email: string; role: string; modules: string[] }
   isOpen: boolean
   onClose: () => void
 }
 
-const canAccessStats = (role: string) => role === 'ADMIN'
-
 const navItems = [
-  { href: '/dashboard', label: 'Tableau de bord', permission: () => true },
-  { href: '/vehicules', label: 'Véhicules', permission: canAccessVehicules },
-  { href: '/personnel', label: 'Personnel', permission: canAccessPersonnel },
-  { href: '/carburant', label: 'Sorties Carburant', permission: canAccessCarburant },
-  { href: '/reparations', label: 'Réparations', permission: canAccessReparations },
-  { href: '/vidanges', label: 'Vidanges', permission: canAccessVidanges },
-  { href: '/stats', label: 'Statistiques', permission: canAccessStats },
-  { href: '/alertes', label: 'Alertes', permission: canAccessAlertes },
-  { href: '/factures', label: 'Factures', permission: canAccessCarburant },
-  { href: '/carte', label: 'Carte Essence', permission: (role: string) => role === 'ADMIN' },
+  { href: '/dashboard',   label: 'Tableau de bord', module: undefined },
+  { href: '/vehicules',   label: 'Véhicules',        module: 'vehicules' },
+  { href: '/personnel',   label: 'Personnel',        module: 'personnel' },
+  { href: '/reparations', label: 'Réparations',      module: 'reparations' },
+  { href: '/factures',    label: 'Factures',         module: 'factures' },
+  { href: '/stats',       label: 'Statistiques',     module: 'stats' },
+  { href: '/alertes',     label: 'Alertes',          module: 'alertes' },
+  { href: '/carte',       label: 'Carte Essence',    module: 'carte' },
 ]
 
 export function MobileNav({ user, isOpen, onClose }: MobileNavProps) {
   const pathname = usePathname()
-  const visibleItems = navItems.filter((item) => item.permission(user.role))
+  const visibleItems = navItems.filter(item =>
+    canSeeModule(user.role, user.modules ?? [], item.module)
+  )
 
   if (!isOpen) return null
 
@@ -61,21 +60,29 @@ export function MobileNav({ user, isOpen, onClose }: MobileNavProps) {
           {visibleItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
+              <Link key={item.href} href={item.href} onClick={onClose}
                 className={cn(
                   'flex items-center px-3 py-3 rounded-lg text-sm font-medium',
-                  isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  isActive ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                 )}
               >
                 {item.label}
               </Link>
             )
           })}
+          {user.role === 'ADMIN' && (
+            <>
+              <p className="text-slate-600 text-[10px] font-semibold uppercase tracking-wider px-3 mt-4 mb-1">Administration</p>
+              <Link href="/admin" onClick={onClose}
+                className={cn(
+                  'flex items-center px-3 py-3 rounded-lg text-sm font-medium',
+                  pathname === '/admin' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                )}
+              >
+                Utilisateurs
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* User */}

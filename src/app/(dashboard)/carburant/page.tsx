@@ -148,10 +148,6 @@ export default function CarburantPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [prixGlobal, setPrixGlobal] = useState('650')
   const [prixGasoil, setPrixGasoil] = useState('700')
-  const [editingPrix, setEditingPrix] = useState(false)
-  const [newPrix, setNewPrix] = useState('')
-  const [editingPrixGasoil, setEditingPrixGasoil] = useState(false)
-  const [newPrixGasoil, setNewPrixGasoil] = useState('')
   const [userRole, setUserRole] = useState('')
   const [budgetSolde, setBudgetSolde]       = useState<number | null>(null)
   const [budgetEnAlerte, setBudgetEnAlerte] = useState(false)
@@ -208,30 +204,6 @@ export default function CarburantPage() {
       setBudgetSolde(data.solde)
       setBudgetEnAlerte(data.enAlerte)
     }
-  }
-
-  const handlePrixUpdate = async () => {
-    if (!newPrix || isNaN(parseFloat(newPrix))) return
-    await fetch('/api/parametres', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prixCarburant: newPrix }),
-    })
-    setPrixGlobal(newPrix)
-    setEditingPrix(false)
-    setNewPrix('')
-  }
-
-  const handlePrixGasoilUpdate = async () => {
-    if (!newPrixGasoil || isNaN(parseFloat(newPrixGasoil))) return
-    await fetch('/api/parametres', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prixGasoil: newPrixGasoil }),
-    })
-    setPrixGasoil(newPrixGasoil)
-    setEditingPrixGasoil(false)
-    setNewPrixGasoil('')
   }
 
   useEffect(() => { fetchData() }, [fetchData])
@@ -359,66 +331,7 @@ export default function CarburantPage() {
               </div>
             </div>
           )}
-          <div className="flex items-center gap-3 bg-[#1E293B] border border-slate-700/50 rounded-xl px-4 py-3">
-            <div>
-              <p className="text-slate-400 text-xs">Prix carburant (Essence)</p>
-              {editingPrix ? (
-                <div className="flex items-center gap-2 mt-1">
-                  <input
-                    type="number"
-                    value={newPrix}
-                    onChange={e => setNewPrix(e.target.value)}
-                    className="w-24 bg-[#0F172A] border border-slate-700 rounded-lg px-2 py-1 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={prixGlobal}
-                    autoFocus
-                  />
-                  <button onClick={handlePrixUpdate} className="text-green-400 hover:text-green-300 text-xs font-medium">Valider</button>
-                  <button onClick={() => setEditingPrix(false)} className="text-slate-500 hover:text-white text-xs">Annuler</button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <p className="text-white font-bold text-sm">{parseInt(prixGlobal).toLocaleString('fr-FR')} FCFA/L</p>
-                  {userRole === 'ADMIN' && (
-                    <button onClick={() => { setNewPrix(prixGlobal); setEditingPrix(true) }} className="text-slate-500 hover:text-blue-400 transition-colors">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-3 bg-[#1E293B] border border-amber-500/20 rounded-xl px-4 py-3">
-            <div>
-              <p className="text-slate-400 text-xs">Prix carburant (Gasoil)</p>
-              {editingPrixGasoil ? (
-                <div className="flex items-center gap-2 mt-1">
-                  <input
-                    type="number"
-                    value={newPrixGasoil}
-                    onChange={e => setNewPrixGasoil(e.target.value)}
-                    className="w-24 bg-[#0F172A] border border-slate-700 rounded-lg px-2 py-1 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    placeholder={prixGasoil}
-                    autoFocus
-                  />
-                  <button onClick={handlePrixGasoilUpdate} className="text-green-400 hover:text-green-300 text-xs font-medium">Valider</button>
-                  <button onClick={() => setEditingPrixGasoil(false)} className="text-slate-500 hover:text-white text-xs">Annuler</button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <p className="text-amber-400 font-bold text-sm">{parseInt(prixGasoil).toLocaleString('fr-FR')} FCFA/L</p>
-                  {userRole === 'ADMIN' && (
-                    <button onClick={() => { setNewPrixGasoil(prixGasoil); setEditingPrixGasoil(true) }} className="text-slate-500 hover:text-amber-400 transition-colors">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+
           <button onClick={() => { setForm(f => ({ ...emptyForm, prixLitre: prixGlobal })); setError(''); setShowModal(true) }}
             className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -549,7 +462,6 @@ export default function CarburantPage() {
                   </td>
                   <td className="px-5 py-4 text-right">
                     <p className="text-orange-400 font-semibold text-sm">{formatLitres(s.litres)}</p>
-                    <p className="text-slate-500 text-xs">{formatCFA(s.prixLitre)}/L</p>
                   </td>
                   <td className="px-5 py-4 text-right">
                     <p className="text-white font-bold text-sm">{formatCFA(s.coutTotal)}</p>
@@ -640,6 +552,21 @@ export default function CarburantPage() {
                 required
               />
 
+              {/* Type de carburant détecté */}
+              {selectedVehicule && (
+                <div className="flex items-center gap-3 bg-slate-800/60 rounded-xl px-4 py-3 border border-slate-700/50">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${selectedVehicule.typeCarburant === 'GASOIL' ? 'bg-amber-500/20' : 'bg-green-500/20'}`}>
+                    <svg className={`w-4 h-4 ${selectedVehicule.typeCarburant === 'GASOIL' ? 'text-amber-400' : 'text-green-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-white text-sm font-medium">{selectedVehicule.typeCarburant === 'GASOIL' ? 'Gasoil' : 'Essence'}</p>
+                    <p className="text-slate-400 text-xs">{formatCFA(parseFloat(selectedVehicule.typeCarburant === 'GASOIL' ? prixGasoil : prixGlobal))}/L</p>
+                  </div>
+                </div>
+              )}
+
               {/* Employé assigné automatiquement */}
               {selectedVehicule && selectedVehicule.personnelAssigne && (
                 <div className="flex items-center gap-3 bg-slate-800/60 rounded-xl px-4 py-3 border border-slate-700/50">
@@ -699,7 +626,7 @@ export default function CarburantPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div>
                 {form.saisieMode === 'litres' ? (
                   <div>
                     <label className="block text-sm text-slate-300 mb-1.5">Litres *</label>
@@ -715,15 +642,6 @@ export default function CarburantPage() {
                       placeholder="32500" required min="1" />
                   </div>
                 )}
-                <div>
-                  <label className="block text-sm text-slate-300 mb-1.5">Prix/litre (FCFA)</label>
-                  <input
-                    type="number"
-                    value={form.prixLitre}
-                    readOnly
-                    className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-slate-400 text-sm opacity-60 cursor-not-allowed"
-                  />
-                </div>
               </div>
 
               {/* Résumé calculé */}
@@ -781,26 +699,14 @@ export default function CarburantPage() {
             </div>
             <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
               {editError && <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 text-sm">{editError}</div>}
-              <div className="grid grid-cols-2 gap-4">
+              <div>
                 <div>
                   <label className="block text-sm text-slate-300 mb-1.5">Litres *</label>
                   <input type="number" value={editForm.litres} onChange={e => setEditForm(f => ({ ...f, litres: e.target.value }))}
                     className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required min="0.1" step="0.5" />
                 </div>
-                <div>
-                  <label className="block text-sm text-slate-300 mb-1.5">Prix/litre (FCFA) *</label>
-                  <input type="number" value={editForm.prixLitre} onChange={e => setEditForm(f => ({ ...f, prixLitre: e.target.value }))}
-                    className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required min="1" />
-                </div>
               </div>
-              {editForm.litres && editForm.prixLitre && (
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex items-center justify-between">
-                  <span className="text-blue-300 text-sm">Nouveau coût total</span>
-                  <span className="text-white font-bold">{formatCFA(parseFloat(editForm.litres) * parseFloat(editForm.prixLitre))}</span>
-                </div>
-              )}
               <div>
                 <label className="block text-sm text-slate-300 mb-1.5">Date et heure</label>
                 <input type="datetime-local" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))}

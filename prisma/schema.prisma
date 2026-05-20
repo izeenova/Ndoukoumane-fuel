@@ -17,6 +17,7 @@ model User {
   password  String
   role      RoleUser @default(CARBURANT)
   actif     Boolean  @default(true)
+  modules   String[] @default([])  // modules accessibles (vide = défauts selon rôle)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

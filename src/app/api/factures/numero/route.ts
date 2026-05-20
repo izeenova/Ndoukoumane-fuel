@@ -1,19 +1,23 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-// GET — retourne le prochain numéro de facture auto-généré pour aujourd'hui
+// GET — retourne le prochain numéro de facture auto-généré
 // Format : YYYYMMDD-XX  ex: 20260512-01, 20260512-02…
-export async function GET() {
+// Accepte ?date=YYYY-MM-DD pour générer selon la date de la facture
+export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-    const today = new Date()
-    const yy = today.getFullYear()
-    const mm = String(today.getMonth() + 1).padStart(2, '0')
-    const dd = String(today.getDate()).padStart(2, '0')
+    const { searchParams } = new URL(req.url)
+    const dateParam = searchParams.get('date')
+
+    const ref = dateParam ? new Date(dateParam) : new Date()
+    const yy  = ref.getFullYear()
+    const mm  = String(ref.getMonth() + 1).padStart(2, '0')
+    const dd  = String(ref.getDate()).padStart(2, '0')
     const prefix = `${yy}${mm}${dd}-`
 
     // Chercher les factures dont le numéro commence par ce préfixe

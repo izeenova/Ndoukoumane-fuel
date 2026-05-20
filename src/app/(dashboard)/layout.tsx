@@ -31,9 +31,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const user = {
-    name: session.user.name || 'Utilisateur',
-    email: session.user.email || '',
-    role: (session.user as { role: string }).role || 'CARBURANT',
+    name:    session.user.name || 'Utilisateur',
+    email:   session.user.email || '',
+    role:    (session.user as { role: string; modules: string[] }).role    || 'CARBURANT',
+    modules: (session.user as { role: string; modules: string[] }).modules || [],
   }
 
   return (

@@ -50,6 +50,13 @@ export default function CartePage() {
   const [histDateDebut, setHistDateDebut] = useState('')
   const [histDateFin, setHistDateFin]     = useState('')
   const [histTypeFilter, setHistTypeFilter] = useState<'TOUS' | 'ENTREES' | 'SORTIES'>('TOUS')
+  const [prixEssence, setPrixEssence]       = useState('650')
+  const [prixGasoil, setPrixGasoil]         = useState('700')
+  const [editPrixEssence, setEditPrixEssence]   = useState(false)
+  const [editPrixGasoil, setEditPrixGasoil]     = useState(false)
+  const [newPrixEssence, setNewPrixEssence]     = useState('')
+  const [newPrixGasoil, setNewPrixGasoil]       = useState('')
+  const [savingPrix, setSavingPrix]             = useState(false)
 
   const fetchBudget = useCallback(async () => {
     setLoading(true)
@@ -72,6 +79,41 @@ export default function CartePage() {
 
   useEffect(() => { fetchBudget() }, [fetchBudget])
   useEffect(() => { fetchHistorique() }, [fetchHistorique])
+
+  const fetchPrix = useCallback(async () => {
+    const res = await fetch('/api/parametres')
+    const data = await res.json()
+    setPrixEssence(data.prixCarburant || '650')
+    setPrixGasoil(data.prixGasoil || '700')
+  }, [])
+
+  useEffect(() => { fetchPrix() }, [fetchPrix])
+
+  const handlePrixEssenceUpdate = async () => {
+    if (!newPrixEssence || isNaN(parseFloat(newPrixEssence))) return
+    setSavingPrix(true)
+    await fetch('/api/parametres', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prixCarburant: newPrixEssence }),
+    })
+    setPrixEssence(newPrixEssence)
+    setEditPrixEssence(false)
+    setSavingPrix(false)
+  }
+
+  const handlePrixGasoilUpdate = async () => {
+    if (!newPrixGasoil || isNaN(parseFloat(newPrixGasoil))) return
+    setSavingPrix(true)
+    await fetch('/api/parametres', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prixGasoil: newPrixGasoil }),
+    })
+    setPrixGasoil(newPrixGasoil)
+    setEditPrixGasoil(false)
+    setSavingPrix(false)
+  }
 
   const handleRecharge = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -186,6 +228,63 @@ export default function CartePage() {
             <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 p-4">
               <p className="text-slate-400 text-xs mb-1">Moy. par recharge</p>
               <p className="text-2xl font-bold text-white">{formatCFA(moyenneRecharge)}</p>
+            </div>
+          </div>
+
+          {/* Prix des carburants */}
+          <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 p-5">
+            <h3 className="text-white font-semibold text-sm mb-4">Prix des carburants</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Essence */}
+              <div className="bg-[#0F172A] rounded-xl border border-slate-700/50 p-4">
+                <p className="text-slate-400 text-xs mb-2">Essence</p>
+                {editPrixEssence ? (
+                  <div className="flex items-center gap-2">
+                    <input type="number" value={newPrixEssence} onChange={e => setNewPrixEssence(e.target.value)} autoFocus
+                      className="w-28 bg-[#1E293B] border border-slate-700 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                    <button onClick={handlePrixEssenceUpdate} disabled={savingPrix}
+                      className="px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white rounded-lg text-xs font-medium">
+                      {savingPrix ? '...' : 'Valider'}
+                    </button>
+                    <button onClick={() => setEditPrixEssence(false)} className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-xs">Annuler</button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="text-white font-bold text-lg">{parseInt(prixEssence).toLocaleString('fr-FR')} FCFA/L</p>
+                    <button onClick={() => { setNewPrixEssence(prixEssence); setEditPrixEssence(true) }}
+                      className="text-slate-500 hover:text-green-400 transition-colors">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+              {/* Gasoil */}
+              <div className="bg-[#0F172A] rounded-xl border border-amber-500/20 p-4">
+                <p className="text-amber-400 text-xs mb-2">Gasoil</p>
+                {editPrixGasoil ? (
+                  <div className="flex items-center gap-2">
+                    <input type="number" value={newPrixGasoil} onChange={e => setNewPrixGasoil(e.target.value)} autoFocus
+                      className="w-28 bg-[#1E293B] border border-slate-700 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    <button onClick={handlePrixGasoilUpdate} disabled={savingPrix}
+                      className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white rounded-lg text-xs font-medium">
+                      {savingPrix ? '...' : 'Valider'}
+                    </button>
+                    <button onClick={() => setEditPrixGasoil(false)} className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-xs">Annuler</button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="text-amber-400 font-bold text-lg">{parseInt(prixGasoil).toLocaleString('fr-FR')} FCFA/L</p>
+                    <button onClick={() => { setNewPrixGasoil(prixGasoil); setEditPrixGasoil(true) }}
+                      className="text-slate-500 hover:text-amber-400 transition-colors">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
