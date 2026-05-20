@@ -46,6 +46,7 @@ export default function StatsPage() {
   const [detailId, setDetailId] = useState<string | null>(null)
   const [detailData, setDetailData] = useState<any>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [showAllChauffeurs, setShowAllChauffeurs] = useState(false)
 
   const fetchStats = useCallback(async () => {
     setLoading(true)
@@ -192,9 +193,10 @@ export default function StatsPage() {
                 <p className="text-slate-500 text-sm">Aucune donnée sur cette période</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-800/60">
-                {classement.map((c, i) => {
-                  const pct = Math.round((c.litres / maxLitres) * 100)
+              <div>
+                <div className="divide-y divide-slate-800/60">
+                  {(showAllChauffeurs ? classement : classement.slice(0, 5)).map((c, i) => {
+                    const pct = Math.round((c.litres / maxLitres) * 100)
                   return (
                     <div key={i} className="px-5 py-4">
                       <div className="flex items-center gap-4">
@@ -246,6 +248,15 @@ export default function StatsPage() {
                     </div>
                   )
                 })}
+              </div>
+              {classement.length > 5 && (
+                <button onClick={() => setShowAllChauffeurs(s => !s)}
+                  className="w-full py-3 text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors bg-slate-800/30 hover:bg-slate-800/50 rounded-b-xl">
+                  {showAllChauffeurs
+                    ? `↑ Voir moins (${classement.length - 5} masqués)`
+                    : `↓ Voir plus (${classement.length - 5} autres)`}
+                </button>
+              )}
               </div>
             )}
           </div>
