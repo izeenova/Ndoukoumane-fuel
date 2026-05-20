@@ -9,132 +9,106 @@ export async function GET(req: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
     const { searchParams } = new URL(req.url)
-    const periode = searchParams.get('periode') || 'mois' // mois | 3mois | 6mois | annee | tout
+    const periode = searchParams.get('periode') || 'mois'
 
-    // Calcul de la date de début selon la période
     const now = new Date()
     let dateDebut: Date | undefined
-
     switch (periode) {
-      case 'mois':
-        dateDebut = new Date(now.getFullYear(), now.getMonth(), 1)
-        break
-      case '3mois':
-        dateDebut = new Date(now.getFullYear(), now.getMonth() - 3, 1)
-        break
-      case '6mois':
-        dateDebut = new Date(now.getFullYear(), now.getMonth() - 6, 1)
-        break
-      case 'annee':
-        dateDebut = new Date(now.getFullYear(), 0, 1)
-        break
-      default:
-        dateDebut = undefined
+      case 'mois':   dateDebut = new Date(now.getFullYear(), now.getMonth(), 1); break
+      case '3mois':  dateDebut = new Date(now.getFullYear(), now.getMonth() - 3, 1); break
+      case '6mois':  dateDebut = new Date(now.getFullYear(), now.getMonth() - 6, 1); break
+      case 'annee':  dateDebut = new Date(now.getFullYear(), 0, 1); break
+      default:       dateDebut = undefined
     }
 
-    const whereDate = dateDebut ? { date: { gte: dateDebut } } : {}
+    // ─── Véhicules + Chauffeurs ──────────────────────────────────────────────
+    const vehicules = await prisma.vehicule.findMany({
+      select: {
+        id: true, immatriculation: true, marque: true, modele: true, type: true,
+        personnelAssigne: { select: { id: true, prenom: true, nom: true } },
+      },
+    })
+    const vehiculeMap = Object.fromEntries(vehicules.map(v => [v.id, v]))
 
-    // ─── 1. Classement chauffeurs ─────────────────────────────────────────────
-    const [classementRaw, personnelList] = await Promise.all([
-      prisma.sortieCarburant.groupBy({
-        by: ['personnelId'],
-        where: whereDate,
-        _sum: { litres: true, coutTotal: true },
-        _count: { id: true },
-        orderBy: { _sum: { litres: 'desc' } },
-      }),
-      prisma.personnel.findMany({
-        select: { id: true, nom: true, prenom: true, role: true },
-      }),
-    ])
+    // ─── Carburant via Factures ───────────────────────────────────────────────
+    const factureLines = await prisma.ligneFacture.findMany({
+      where: {
+        type: 'CARBURANT',
+        facture: dateDebut ? { date: { gte: dateDebut } } : {},
+      },
+      include: { facture: { select: { vehiculeId: true } } },
+    })
 
-    const personnelMap = Object.fromEntries(personnelList.map(p => [p.id, p]))
-    const classementChauffeurs = classementRaw
-      .map(c => ({
-        personnel: personnelMap[c.personnelId] || { nom: '—', prenom: '', role: '' },
-        litres: c._sum.litres || 0,
-        coutTotal: c._sum.coutTotal || 0,
-        nbSorties: c._count.id || 0,
-      }))
-      .filter(c => c.personnel.nom !== '—')
-
-    // ─── 2. Coût total par véhicule ───────────────────────────────────────────
-    const whereVehiculeDate = dateDebut ? { date: { gte: dateDebut } } : {}
-
-    const [coutCarburantRaw, coutReparationsRaw, factureLines, vehiculesList] = await Promise.all([
-      prisma.sortieCarburant.groupBy({
-        by: ['vehiculeId'],
-        where: whereVehiculeDate,
-        _sum: { litres: true, coutTotal: true },
-        _count: { id: true },
-      }),
-      prisma.reparation.groupBy({
-        by: ['vehiculeId'],
-        where: whereVehiculeDate,
-        _sum: { cout: true },
-        _count: { id: true },
-      }),
-      prisma.ligneFacture.findMany({
-        where: {
-          type: 'CARBURANT',
-          facture: dateDebut ? { date: { gte: dateDebut } } : {},
-        },
-        include: { facture: { select: { vehiculeId: true } } },
-      }),
-      prisma.vehicule.findMany({
-        select: { id: true, immatriculation: true, marque: true, modele: true, type: true },
-      }),
-    ])
-
-    const vehiculeMap = Object.fromEntries(vehiculesList.map(v => [v.id, v]))
-    const coutCarburantMap = Object.fromEntries(
-      coutCarburantRaw.map(c => [c.vehiculeId, {
-        litres: c._sum.litres || 0,
-        coutCarburant: c._sum.coutTotal || 0,
-        nbSorties: c._count.id || 0,
-      }])
-    )
-
-    // Fusionner les lignes de facture carburant
+    // Grouper les lignes de carburant par véhicule
+    const carburantByVehicule: Record<string, { litres: number; coutCarburant: number; nbSorties: number }> = {}
     for (const l of factureLines) {
       const vid = l.facture.vehiculeId
-      if (!coutCarburantMap[vid]) coutCarburantMap[vid] = { litres: 0, coutCarburant: 0, nbSorties: 0 }
-      coutCarburantMap[vid].litres += l.quantite || 0
-      coutCarburantMap[vid].coutCarburant += l.montant
-      coutCarburantMap[vid].nbSorties += 1
+      if (!carburantByVehicule[vid]) carburantByVehicule[vid] = { litres: 0, coutCarburant: 0, nbSorties: 0 }
+      carburantByVehicule[vid].litres += l.quantite || 0
+      carburantByVehicule[vid].coutCarburant += l.montant
+      carburantByVehicule[vid].nbSorties += 1
     }
 
-    const coutReparationsMap = Object.fromEntries(
-      coutReparationsRaw.map(r => [r.vehiculeId, {
+    // ─── Réparations ──────────────────────────────────────────────────────────
+    const reparationsRaw = await prisma.reparation.groupBy({
+      by: ['vehiculeId'],
+      where: dateDebut ? { date: { gte: dateDebut } } : {},
+      _sum: { cout: true },
+      _count: { id: true },
+    })
+    const reparationsByVehicule: Record<string, { coutReparations: number; nbReparations: number }> = {}
+    for (const r of reparationsRaw) {
+      reparationsByVehicule[r.vehiculeId] = {
         coutReparations: r._sum.cout || 0,
         nbReparations: r._count.id || 0,
-      }])
-    )
+      }
+    }
 
-    // Fusionner tous les véhicules qui ont au moins une activité
-    const vehiculeIds = new Set([
-      ...Object.keys(coutCarburantMap),
-      ...Object.keys(coutReparationsMap),
-    ])
-
+    // ─── Fusion véhicules ─────────────────────────────────────────────────────
+    const vehiculeIds = new Set([...Object.keys(carburantByVehicule), ...Object.keys(reparationsByVehicule)])
     const coutParVehicule = Array.from(vehiculeIds)
       .map(id => {
-        const vehicule = vehiculeMap[id]
-        if (!vehicule) return null
-        const carburant = coutCarburantMap[id] || { litres: 0, coutCarburant: 0, nbSorties: 0 }
-        const reparation = coutReparationsMap[id] || { coutReparations: 0, nbReparations: 0 }
+        const v = vehiculeMap[id]
+        if (!v) return null
+        const carb = carburantByVehicule[id] || { litres: 0, coutCarburant: 0, nbSorties: 0 }
+        const rep = reparationsByVehicule[id] || { coutReparations: 0, nbReparations: 0 }
         return {
-          vehicule,
-          litres: carburant.litres,
-          coutCarburant: carburant.coutCarburant,
-          coutReparations: reparation.coutReparations,
-          coutTotal: carburant.coutCarburant + reparation.coutReparations,
-          nbSorties: carburant.nbSorties,
-          nbReparations: reparation.nbReparations,
+          vehicule: { ...v, chauffeur: v.personnelAssigne ? `${v.personnelAssigne.prenom} ${v.personnelAssigne.nom}` : null },
+          litres: carb.litres,
+          coutCarburant: carb.coutCarburant,
+          coutReparations: rep.coutReparations,
+          coutTotal: carb.coutCarburant + rep.coutReparations,
+          nbSorties: carb.nbSorties,
+          nbReparations: rep.nbReparations,
         }
       })
       .filter(Boolean)
-      .sort((a, b) => (b!.coutTotal - a!.coutTotal))
+      .sort((a, b) => b!.coutTotal - a!.coutTotal)
+
+    // ─── Classement chauffeurs (depuis les factures) ──────────────────────────
+    const chauffeurMap: Record<string, { litres: number; coutTotal: number; nbSorties: number }> = {}
+    for (const l of factureLines) {
+      const v = vehiculeMap[l.facture.vehiculeId]
+      if (!v?.personnelAssigne) continue
+      const pid = v.personnelAssigne.id
+      if (!chauffeurMap[pid]) chauffeurMap[pid] = { litres: 0, coutTotal: 0, nbSorties: 0 }
+      chauffeurMap[pid].litres += l.quantite || 0
+      chauffeurMap[pid].coutTotal += l.montant
+      chauffeurMap[pid].nbSorties += 1
+    }
+
+    const classementChauffeurs = Object.entries(chauffeurMap)
+      .map(([pid, data]) => {
+        const p = vehicules.map(v => v.personnelAssigne).find(pa => pa?.id === pid)
+        return {
+          personnel: { nom: p?.nom || '—', prenom: p?.prenom || '', role: 'CHAUFFEUR' },
+          litres: data.litres,
+          coutTotal: data.coutTotal,
+          nbSorties: data.nbSorties,
+        }
+      })
+      .filter(c => c.personnel.nom !== '—')
+      .sort((a, b) => b.litres - a.litres)
 
     return NextResponse.json({
       periode,

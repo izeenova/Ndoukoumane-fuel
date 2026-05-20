@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { formatCFA, formatLitres, getRolePersonnelLabel, getTypeVehiculeLabel } from '@/lib/utils'
+import { formatCFA, formatLitres, getRolePersonnelLabel } from '@/lib/utils'
 
 type Periode = 'mois' | '3mois' | '6mois' | 'annee' | 'tout'
 
@@ -13,7 +13,7 @@ interface ChauffeurStat {
 }
 
 interface VehiculeStat {
-  vehicule: { id: string; immatriculation: string; marque: string; modele: string; type: string }
+  vehicule: { id: string; immatriculation: string; marque: string; modele: string; type: string; chauffeur?: string | null }
   litres: number
   coutCarburant: number
   coutReparations: number
@@ -285,7 +285,7 @@ export default function StatsPage() {
                                 </div>
                                 <div>
                                   <p className="text-white font-semibold text-sm">{v.vehicule.immatriculation}</p>
-                                  <p className="text-slate-500 text-xs">{v.vehicule.marque} {v.vehicule.modele} · {getTypeVehiculeLabel(v.vehicule.type)}</p>
+                                  <p className="text-slate-500 text-xs">{v.vehicule.marque} {v.vehicule.modele}{v.vehicule.chauffeur ? ` · ${v.vehicule.chauffeur}` : ''}</p>
                                 </div>
                               </div>
                             </td>

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { formatCFA, formatDateTime } from '@/lib/utils'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { formatCFA, formatDateTime, formatLitres } from '@/lib/utils'
 
 interface Reparation {
   id: string
@@ -15,10 +15,69 @@ interface Reparation {
   createdBy: { name: string }
 }
 
-interface Vehicule { id: string; immatriculation: string; marque: string; modele: string }
+interface Vehicule { id: string; immatriculation: string; marque: string; modele: string; personnelAssigne: { id: string; prenom: string; nom: string } | null }
 interface Personnel { id: string; nom: string; prenom: string; role: string }
 
-const emptyForm = { vehiculeId: '', personnelId: '', description: '', cout: '', date: '', pieces: '', notes: '', vehiculeStatut: '' }
+// ─── Combobox recherchable pour véhicules ─────────────────────────────────────
+function VehiculeSelect({ vehicules, value, onSelect, required }: {
+  vehicules: Vehicule[]; value: string; onSelect: (id: string) => void; required?: boolean
+}) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+
+  useEffect(() => { if (!value) setQuery('') }, [value])
+
+  const selected = vehicules.find(v => v.id === value)
+  const filtered = query
+    ? vehicules.filter(v =>
+        `${v.immatriculation} ${v.marque} ${v.modele} ${v.personnelAssigne?.prenom ?? ''} ${v.personnelAssigne?.nom ?? ''}`
+          .toLowerCase().includes(query.toLowerCase())
+      )
+    : vehicules
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="block text-sm text-slate-300 mb-1.5">Véhicule *</label>
+      <div className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-sm flex items-center gap-2 cursor-pointer focus-within:ring-2 focus-within:ring-blue-500"
+        onClick={() => setOpen(true)}>
+        <svg className="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input type="text" value={open ? query : (selected ? `${selected.immatriculation} — ${selected.marque} ${selected.modele}${selected.personnelAssigne ? ` (${selected.personnelAssigne.prenom} ${selected.personnelAssigne.nom})` : ''}` : '')}
+          onChange={e => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={() => { setQuery(''); setOpen(true) }}
+          placeholder="Chercher plaque, marque, chauffeur..."
+          className="flex-1 bg-transparent text-white placeholder-slate-500 outline-none min-w-0 text-sm" />
+      </div>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-[#0F172A] border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
+          <div className="max-h-52 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <p className="text-slate-500 text-sm text-center py-4">Aucun résultat</p>
+            ) : filtered.map(v => (
+              <button key={v.id} type="button" onClick={() => { onSelect(v.id); setQuery(''); setOpen(false) }}
+                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-800 transition-colors ${value === v.id ? 'bg-blue-600/20 text-blue-300' : 'text-white'}`}>
+                <span className="font-semibold">{v.immatriculation}</span>
+                <span className="text-slate-400"> — {v.marque} {v.modele}</span>
+                {v.personnelAssigne && <span className="text-slate-500 text-xs ml-2">({v.personnelAssigne.prenom} {v.personnelAssigne.nom})</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <input type="hidden" value={value} required={required} />
+    </div>
+  )
+}
+
+const emptyForm = { vehiculeId: '', personnelId: '', description: '', cout: '', date: '', pieces: '', notes: '', vehiculeStatut: 'EN_REPARATION' }
 
 export default function ReparationsPage() {
   const [reparations, setReparations] = useState<Reparation[]>([])
@@ -38,6 +97,17 @@ export default function ReparationsPage() {
   const [userRole, setUserRole]             = useState('')
   const [suppressions, setSuppressions]     = useState<{ id: string; description: string; montant: number; createdAt: string; createdBy: { name: string } }[]>([])
   const [showSuppressions, setShowSuppressions] = useState(false)
+  const [mecanoSearch, setMecanoSearch]     = useState('')
+  const [mecanoOpen, setMecanoOpen]         = useState(false)
+  const [showNewMecano, setShowNewMecano]   = useState(false)
+  const [newMecanoForm, setNewMecanoForm]   = useState({ prenom: '', nom: '' })
+  const mecanoRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (mecanoRef.current && !mecanoRef.current.contains(e.target as Node)) { setMecanoOpen(false); setShowNewMecano(false) } }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -87,6 +157,23 @@ export default function ReparationsPage() {
     await fetch(`/api/reparations/${id}`, { method: 'DELETE' })
     fetchData()
     if (showSuppressions) fetchSuppressions()
+  }
+
+  const handleCreateMecano = async () => {
+    if (!newMecanoForm.prenom.trim() || !newMecanoForm.nom.trim()) return
+    const res = await fetch('/api/personnel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...newMecanoForm, role: 'MECANO' }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setForm(f => ({ ...f, personnelId: data.id }))
+      setMecanos(prev => [...prev, data])
+      setNewMecanoForm({ prenom: '', nom: '' })
+      setShowNewMecano(false)
+      setMecanoOpen(false)
+    }
   }
 
   return (
@@ -218,22 +305,60 @@ export default function ReparationsPage() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 text-sm">{error}</div>}
               {!editItem && (
-                <div>
-                  <label className="block text-sm text-slate-300 mb-1.5">Véhicule *</label>
-                  <select value={form.vehiculeId} onChange={e => setForm(f => ({ ...f, vehiculeId: e.target.value }))}
-                    className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <option value="">Sélectionner un véhicule</option>
-                    {vehicules.map(v => <option key={v.id} value={v.id}>{v.immatriculation} — {v.marque} {v.modele}</option>)}
-                  </select>
-                </div>
+                <VehiculeSelect vehicules={vehicules} value={form.vehiculeId}
+                  onSelect={id => setForm(f => ({ ...f, vehiculeId: id }))} required />
               )}
-              <div>
+              <div ref={mecanoRef} className="relative">
                 <label className="block text-sm text-slate-300 mb-1.5">Mécanicien</label>
-                <select value={form.personnelId} onChange={e => setForm(f => ({ ...f, personnelId: e.target.value }))}
-                  className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">Sélectionner un mécanicien</option>
-                  {mecanos.map(m => <option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>)}
-                </select>
+                <div className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-sm flex items-center gap-2 cursor-pointer focus-within:ring-2 focus-within:ring-blue-500"
+                  onClick={() => setMecanoOpen(true)}>
+                  <svg className="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input type="text" value={mecanoOpen ? mecanoSearch : (mecanos.find(m => m.id === form.personnelId) ? `${mecanos.find(m => m.id === form.personnelId)!.prenom} ${mecanos.find(m => m.id === form.personnelId)!.nom}` : '')}
+                    onChange={e => { setMecanoSearch(e.target.value); setMecanoOpen(true) }}
+                    onFocus={() => { setMecanoSearch(''); setMecanoOpen(true) }}
+                    placeholder="Chercher un mécanicien..."
+                    className="flex-1 bg-transparent text-white placeholder-slate-500 outline-none min-w-0 text-sm" />
+                </div>
+                {mecanoOpen && (
+                  <div className="absolute z-50 mt-1 w-full bg-[#0F172A] border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
+                    {showNewMecano ? (
+                      <div className="p-4 space-y-3">
+                        <p className="text-slate-300 text-sm font-medium">Nouveau mécanicien</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="text" value={newMecanoForm.prenom} onChange={e => setNewMecanoForm(f => ({ ...f, prenom: e.target.value }))}
+                            placeholder="Prénom *" className="bg-[#1E293B] border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                          <input type="text" value={newMecanoForm.nom} onChange={e => setNewMecanoForm(f => ({ ...f, nom: e.target.value }))}
+                            placeholder="Nom *" className="bg-[#1E293B] border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                        </div>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => setShowNewMecano(false)}
+                            className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium">Annuler</button>
+                          <button type="button" onClick={handleCreateMecano}
+                            className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium">Ajouter</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="max-h-40 overflow-y-auto">
+                        <button type="button" onClick={() => { setShowNewMecano(true); setMecanoSearch('') }}
+                          className="w-full text-left px-4 py-2.5 text-sm text-green-400 hover:bg-slate-800 font-medium flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                          </svg>
+                          Nouveau mécanicien...
+                        </button>
+                        {(mecanoSearch ? mecanos.filter(m => `${m.prenom} ${m.nom}`.toLowerCase().includes(mecanoSearch.toLowerCase())) : mecanos).map(m => (
+                          <button key={m.id} type="button" onClick={() => { setForm(f => ({ ...f, personnelId: m.id })); setMecanoOpen(false); setMecanoSearch('') }}
+                            className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-800 transition-colors ${form.personnelId === m.id ? 'bg-blue-600/20 text-blue-300' : 'text-white'}`}>
+                            {m.prenom} {m.nom}
+                          </button>
+                        ))}
+                        {mecanos.length === 0 && <p className="text-slate-500 text-sm text-center py-4">Aucun mécanicien</p>}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm text-slate-300 mb-1.5">Description *</label>
@@ -261,12 +386,11 @@ export default function ReparationsPage() {
                   placeholder="Filtre à huile, courroie..." />
               </div>
               <div>
-                <label className="block text-sm text-slate-300 mb-1.5">Statut véhicule après réparation</label>
+                <label className="block text-sm text-slate-300 mb-1.5">Statut véhicule</label>
                 <select value={form.vehiculeStatut} onChange={e => setForm(f => ({ ...f, vehiculeStatut: e.target.value }))}
                   className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">Ne pas modifier</option>
+                  <option value="EN_REPARATION">En réparation (défaut)</option>
                   <option value="ACTIF">Marquer comme Actif</option>
-                  <option value="EN_REPARATION">Toujours en réparation</option>
                   <option value="HORS_SERVICE">Hors service</option>
                 </select>
               </div>
