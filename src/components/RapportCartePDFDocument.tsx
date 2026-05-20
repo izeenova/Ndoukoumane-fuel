@@ -31,7 +31,7 @@ const s = StyleSheet.create({
   summaryRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   summaryBox: { flex: 1, backgroundColor: C.bg, borderRadius: 4, padding: 10, borderWidth: 1, borderColor: C.border },
   summaryLabel: { fontSize: 7, fontFamily: 'Helvetica-Bold', color: C.indigo, marginBottom: 4 },
-  summaryValue: { fontSize: 10, fontFamily: 'Helvetica-Bold', color: C.navy },
+  summaryValue: { fontSize: 14, fontFamily: 'Helvetica-Bold', color: C.navy },
   table: { marginBottom: 16 },
   thead: { flexDirection: 'row', backgroundColor: C.navy, borderRadius: 4, paddingVertical: 6, paddingHorizontal: 6 },
   th: { fontSize: 6, fontFamily: 'Helvetica-Bold', color: C.white },
@@ -47,7 +47,7 @@ const s = StyleSheet.create({
   footer: { borderTopWidth: 1, borderTopColor: C.indigo, paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between' },
   footerBlock: { gap: 3 },
   footerLabel: { fontSize: 8, color: C.slate },
-  footerValue: { fontSize: 12, fontFamily: 'Helvetica-Bold' },
+  footerValue: { fontSize: 14, fontFamily: 'Helvetica-Bold' },
   pageFooter: { position: 'absolute', bottom: 30, left: 40, right: 40, borderTopWidth: 1, borderTopColor: C.border, paddingTop: 8 },
   pageFooterText: { fontSize: 7, color: C.light, textAlign: 'center' },
 })
@@ -82,7 +82,7 @@ export function RapportCartePDFDocument({
         <View style={s.summaryRow}>
           <View style={s.summaryBox}>
             <Text style={s.summaryLabel}>Solde début</Text>
-            <Text style={s.summaryValue}>{fcfa(soldeInitial)}</Text>
+            <Text style={[s.summaryValue, { color: soldeInitial < 0 ? C.red : C.navy }]}>{fcfa(soldeInitial)}</Text>
           </View>
           <View style={s.summaryBox}>
             <Text style={s.summaryLabel}>Solde fin</Text>
@@ -93,6 +93,16 @@ export function RapportCartePDFDocument({
             <Text style={s.summaryValue}>{nbMouvements}</Text>
           </View>
         </View>
+
+        {/* Note sur le solde */}
+        {soldeInitial > 0 && soldeInitial !== soldeFinal && (
+          <View style={{ backgroundColor: C.bg, borderRadius: 4, padding: 8, marginBottom: 12, borderLeftWidth: 3, borderLeftColor: C.indigo }}>
+            <Text style={{ fontSize: 7, color: C.slate, lineHeight: 1.4 }}>
+              Le solde de début de période ({fcfa(soldeInitial)}) correspond au solde juste avant la première transaction affichée. 
+              Il peut être différent du solde final de la période précédente car seuls les mouvements filtrés sont pris en compte.
+            </Text>
+          </View>
+        )}
 
         <View style={s.table}>
           <View style={s.thead}>
@@ -118,7 +128,7 @@ export function RapportCartePDFDocument({
         <View style={s.footer}>
           <View style={s.footerBlock}>
             <Text style={s.footerLabel}>Solde début</Text>
-            <Text style={s.footerValue}>{fcfa(soldeInitial)}</Text>
+            <Text style={[s.footerValue, { color: soldeInitial < 0 ? C.red : C.navy }]}>{fcfa(soldeInitial)}</Text>
           </View>
           <View style={s.footerBlock}>
             <Text style={s.footerLabel}>Solde fin</Text>
