@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     // ─── 2. Coût total par véhicule ───────────────────────────────────────────
     const whereVehiculeDate = dateDebut ? { date: { gte: dateDebut } } : {}
 
-    const [coutCarburantRaw, coutReparationsRaw, vehiculesList] = await Promise.all([
+    const [coutCarburantRaw, coutReparationsRaw, factureLines, vehiculesList] = await Promise.all([
       prisma.sortieCarburant.groupBy({
         by: ['vehiculeId'],
         where: whereVehiculeDate,
@@ -73,6 +73,13 @@ export async function GET(req: NextRequest) {
         where: whereVehiculeDate,
         _sum: { cout: true },
         _count: { id: true },
+      }),
+      prisma.ligneFacture.findMany({
+        where: {
+          type: 'CARBURANT',
+          facture: dateDebut ? { date: { gte: dateDebut } } : {},
+        },
+        include: { facture: { select: { vehiculeId: true } } },
       }),
       prisma.vehicule.findMany({
         select: { id: true, immatriculation: true, marque: true, modele: true, type: true },
@@ -87,6 +94,16 @@ export async function GET(req: NextRequest) {
         nbSorties: c._count.id || 0,
       }])
     )
+
+    // Fusionner les lignes de facture carburant
+    for (const l of factureLines) {
+      const vid = l.facture.vehiculeId
+      if (!coutCarburantMap[vid]) coutCarburantMap[vid] = { litres: 0, coutCarburant: 0, nbSorties: 0 }
+      coutCarburantMap[vid].litres += l.quantite || 0
+      coutCarburantMap[vid].coutCarburant += l.montant
+      coutCarburantMap[vid].nbSorties += 1
+    }
+
     const coutReparationsMap = Object.fromEntries(
       coutReparationsRaw.map(r => [r.vehiculeId, {
         coutReparations: r._sum.cout || 0,

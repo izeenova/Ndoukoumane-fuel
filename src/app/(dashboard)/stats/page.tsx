@@ -42,18 +42,27 @@ export default function StatsPage() {
   const [classement, setClassement] = useState<ChauffeurStat[]>([])
   const [vehicules, setVehicules] = useState<VehiculeStat[]>([])
   const [error, setError] = useState('')
+  const [debug, setDebug] = useState('')
 
   const fetchStats = useCallback(async () => {
     setLoading(true)
     setError('')
+    setDebug('')
     try {
       const res = await fetch(`/api/stats?periode=${periode}`)
-      if (!res.ok) { setError('Erreur lors du chargement des statistiques'); setLoading(false); return }
+      if (!res.ok) { 
+        const errText = await res.text()
+        setError(`Erreur ${res.status}: ${errText}`)
+        setDebug(`Response: ${errText}`)
+        setLoading(false)
+        return
+      }
       const data = await res.json()
+      setDebug(`API OK: classement=${data.classementChauffeurs?.length || 0}, vehicules=${data.coutParVehicule?.length || 0}`)
       setClassement(data.classementChauffeurs || [])
       setVehicules(data.coutParVehicule || [])
-    } catch {
-      setError('Erreur réseau')
+    } catch (e: any) {
+      setError('Erreur réseau: ' + (e?.message || 'inconnue'))
     }
     setLoading(false)
   }, [periode])
@@ -91,6 +100,17 @@ export default function StatsPage() {
         </div>
       </div>
 
+      {/* Debug (admin uniquement) */}
+      {debug && (
+        <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 px-5 py-3">
+          <div className="flex items-center justify-between">
+            <p className="text-slate-400 text-xs">Debug API</p>
+            <button onClick={() => setDebug('')} className="text-slate-500 hover:text-white text-xs">✕</button>
+          </div>
+          <p className="text-slate-500 text-xs mt-1 font-mono">{debug}</p>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center justify-center py-24">
           <div className="flex flex-col items-center gap-3">
@@ -102,8 +122,15 @@ export default function StatsPage() {
           </div>
         </div>
       ) : error ? (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center space-y-3">
+          <p className="text-red-400 text-sm font-medium">{error}</p>
+          <button onClick={() => fetchStats()}
+            className="inline-flex items-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 px-4 py-2 rounded-lg text-xs font-medium transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Réessayer
+          </button>
         </div>
       ) : (
         <div className="space-y-6">
