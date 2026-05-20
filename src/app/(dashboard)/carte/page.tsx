@@ -50,6 +50,7 @@ export default function CartePage() {
   const [histDateDebut, setHistDateDebut] = useState('')
   const [histDateFin, setHistDateFin]     = useState('')
   const [histTypeFilter, setHistTypeFilter] = useState<'TOUS' | 'ENTREES' | 'SORTIES'>('TOUS')
+  const [histPeriode, setHistPeriode]       = useState<string>('')
   const [prixEssence, setPrixEssence]       = useState('650')
   const [prixGasoil, setPrixGasoil]         = useState('700')
   const [editPrixEssence, setEditPrixEssence]   = useState(false)
@@ -66,25 +67,51 @@ export default function CartePage() {
     setLoading(false)
   }, [])
 
+  const HIST_PERIODES = [
+    { value: '',      label: 'Tout' },
+    { value: 'jour',  label: 'Aujourd\'hui' },
+    { value: 'mois',  label: 'Ce mois' },
+    { value: 'trim',  label: 'Ce trimestre' },
+  ]
+
   const fetchHistorique = useCallback(async () => {
     setLoadingHist(true)
     const params = new URLSearchParams()
     if (histDateDebut) params.set('dateDebut', histDateDebut)
     if (histDateFin)   params.set('dateFin', histDateFin)
+    if (histPeriode) params.set('periode', histPeriode)
     const res  = await fetch(`/api/budget/historique?${params}`)
     const data = await res.json()
     setHistorique(Array.isArray(data) ? data : [])
     setLoadingHist(false)
-  }, [histDateDebut, histDateFin])
+  }, [histDateDebut, histDateFin, histPeriode])
 
   useEffect(() => { fetchBudget() }, [fetchBudget])
   useEffect(() => { fetchHistorique() }, [fetchHistorique])
 
+  // Gestion des périodes prédéfinies
+  useEffect(() => {
+    if (!histPeriode) return
+    const now = new Date()
+    let debut = ''
+    let fin = ''
+    if (histPeriode === 'jour') {
+      debut = now.toISOString().slice(0, 10)
+      fin = debut
+    } else if (histPeriode === 'mois') {
+      debut = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+    } else if (histPeriode === 'trim') {
+      debut = new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString().slice(0, 10)
+    }
+    setHistDateDebut(debut)
+    setHistDateFin(fin)
+  }, [histPeriode])
+
   const fetchPrix = useCallback(async () => {
     const res = await fetch('/api/parametres')
     const data = await res.json()
-    setPrixEssence(data.prixCarburant || '650')
-    setPrixGasoil(data.prixGasoil || '700')
+    if (data.prixCarburant) setPrixEssence(data.prixCarburant)
+    if (data.prixGasoil) setPrixGasoil(data.prixGasoil)
   }, [])
 
   useEffect(() => { fetchPrix() }, [fetchPrix])
@@ -323,6 +350,19 @@ export default function CartePage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h3 className="text-white font-semibold text-sm">Historique des mouvements</h3>
                 <div className="flex items-center gap-2 flex-wrap">
+                  {/* Périodes prédéfinies */}
+                  {HIST_PERIODES.map(p => (
+                    <button key={p.value} onClick={() => setHistPeriode(p.value)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                        histPeriode === p.value
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-[#0F172A] text-slate-500 border border-slate-700 hover:text-slate-300'
+                      }`}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
                   <input type="date" value={histDateDebut} onChange={e => setHistDateDebut(e.target.value)}
                     className="bg-[#0F172A] border border-slate-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   <span className="text-slate-500 text-xs">→</span>
@@ -427,6 +467,32 @@ export default function CartePage() {
                 })}
               </div>
             )}
+            {/* Solde final */}
+            {!loadingHist && historique.length > 0 && (() => {
+              const filtered = historique.filter(t =>
+                histTypeFilter === 'TOUS' ? true :
+                histTypeFilter === 'ENTREES' ? t.montant > 0 :
+                t.montant < 0
+              )
+              const soldeFinal = filtered.length > 0 ? filtered[0].soldeCumul : 0
+              const soldeInitial = filtered.length > 0 ? filtered[filtered.length - 1].soldePrecedent : 0
+              return (
+                <div className="px-5 py-4 border-t border-slate-700/50 bg-[#0F172A]">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-slate-400 text-xs">Solde de début de période</p>
+                      <p className="text-white font-bold">{formatCFA(soldeInitial)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-slate-400 text-xs">Solde de fin de période</p>
+                      <p className={`text-lg font-bold ${soldeFinal < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                        {formatCFA(soldeFinal)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         </>
       ) : (

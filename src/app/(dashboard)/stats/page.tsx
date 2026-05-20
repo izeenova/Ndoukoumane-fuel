@@ -41,13 +41,20 @@ export default function StatsPage() {
   const [loading, setLoading] = useState(true)
   const [classement, setClassement] = useState<ChauffeurStat[]>([])
   const [vehicules, setVehicules] = useState<VehiculeStat[]>([])
+  const [error, setError] = useState('')
 
   const fetchStats = useCallback(async () => {
     setLoading(true)
-    const res = await fetch(`/api/stats?periode=${periode}`)
-    const data = await res.json()
-    setClassement(data.classementChauffeurs || [])
-    setVehicules(data.coutParVehicule || [])
+    setError('')
+    try {
+      const res = await fetch(`/api/stats?periode=${periode}`)
+      if (!res.ok) { setError('Erreur lors du chargement des statistiques'); setLoading(false); return }
+      const data = await res.json()
+      setClassement(data.classementChauffeurs || [])
+      setVehicules(data.coutParVehicule || [])
+    } catch {
+      setError('Erreur réseau')
+    }
     setLoading(false)
   }, [periode])
 
@@ -94,8 +101,32 @@ export default function StatsPage() {
             <p className="text-slate-400 text-sm">Calcul en cours...</p>
           </div>
         </div>
+      ) : error ? (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
       ) : (
         <div className="space-y-6">
+          {/* ─── Résumé période ─────────────────────────────────────────── */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 p-4">
+              <p className="text-slate-400 text-xs mb-1">Total chauffeurs</p>
+              <p className="text-white text-xl font-bold">{classement.length}</p>
+            </div>
+            <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 p-4">
+              <p className="text-slate-400 text-xs mb-1">Total litres</p>
+              <p className="text-orange-400 text-xl font-bold">{formatLitres(classement.reduce((s, c) => s + c.litres, 0))}</p>
+            </div>
+            <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 p-4">
+              <p className="text-slate-400 text-xs mb-1">Total dépenses carburant</p>
+              <p className="text-blue-400 text-xl font-bold">{formatCFA(classement.reduce((s, c) => s + c.coutTotal, 0))}</p>
+            </div>
+            <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 p-4">
+              <p className="text-slate-400 text-xs mb-1">Véhicules actifs</p>
+              <p className="text-white text-xl font-bold">{vehicules.length}</p>
+            </div>
+          </div>
+
           {/* ─── Classement Chauffeurs ─────────────────────────────────────── */}
           <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-700/50 flex items-center gap-3">

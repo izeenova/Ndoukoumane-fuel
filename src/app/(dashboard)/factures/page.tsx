@@ -15,6 +15,10 @@ const FactureDownloadButton = dynamic(
   () => import('@/components/FacturePDFActions').then(m => m.FactureDownloadButton),
   { ssr: false, loading: () => <span className="text-slate-600 text-xs">...</span> }
 )
+const MultiFactureDownloadButton = dynamic(
+  () => import('@/components/FacturePDFActions').then(m => m.MultiFactureDownloadButton),
+  { ssr: false, loading: () => null }
+)
 
 type Facture = FacturePDFData
 
@@ -150,6 +154,7 @@ export default function FacturesPage() {
   const [pieceJointe, setPieceJointe]     = useState<PieceJointeResult | null>(null)
   const [prixEssence, setPrixEssence]     = useState('')
   const [prixGasoil, setPrixGasoil]       = useState('')
+  const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set())
 
   // Édition
   const [editingId, setEditingId]         = useState<string | null>(null)
@@ -386,6 +391,15 @@ export default function FacturesPage() {
             </svg>
             Nouvelle facture
           </button>
+          {selectedIds.size > 0 && (
+            <>
+              <button onClick={() => setSelectedIds(new Set())}
+                className="inline-flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors">
+                ✕ Désélectionner ({selectedIds.size})
+              </button>
+              <MultiFactureDownloadButton factures={factures.filter(f => selectedIds.has(f.id))} />
+            </>
+          )}
         </div>
       </div>
 
@@ -449,6 +463,9 @@ export default function FacturesPage() {
               return (
                 <div key={f.id}>
                   <div className="px-5 py-4 flex items-center gap-4">
+                    <input type="checkbox" checked={selectedIds.has(f.id)}
+                      onChange={() => setSelectedIds(prev => { const n = new Set(prev); n.has(f.id) ? n.delete(f.id) : n.add(f.id); return n })}
+                      className="w-4 h-4 rounded accent-purple-600 flex-shrink-0 cursor-pointer" />
                     <button onClick={() => setExpanded(isExpanded ? null : f.id)}
                       className="text-slate-500 hover:text-white transition-colors flex-shrink-0">
                       <svg className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

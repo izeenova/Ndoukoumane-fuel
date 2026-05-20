@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PDFDownloadLink, PDFViewer } from '@react-pdf/renderer'
+import { PDFDownloadLink, PDFViewer, Document, Page, View, Text } from '@react-pdf/renderer'
 import { FacturePDFDocument, type FacturePDFData } from './FacturePDFDocument'
 
 // ─── Bouton de téléchargement ─────────────────────────────────────────────────
@@ -35,6 +35,145 @@ export function FactureDownloadButton({ facture }: { facture: FacturePDFData }) 
               PDF
             </>
           )}
+        </button>
+      )}
+    </PDFDownloadLink>
+  )
+}
+
+// ─── Document PDF multi-factures ─────────────────────────────────────────────
+const mfcfa = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'decimal', minimumFractionDigits: 0 }).format(n) + ' FCFA'
+const mfdate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })
+
+function MultiFacturePDFDocument({ factures }: { factures: FacturePDFData[] }) {
+  const totalGeneral = factures.reduce((s, f) => s + f.total, 0)
+  return (
+    <Document
+      title={`Factures groupées (${factures.length})`}
+      author="NDOUKOUMANE Fuel Manager"
+    >
+      {factures.map((f, fi) => (
+        <Page key={f.id} size="A4" style={{ backgroundColor: '#FFFFFF', padding: 40, fontFamily: 'Helvetica', fontSize: 9 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, paddingBottom: 16, borderBottomWidth: 2, borderBottomColor: '#4F46E5' }}>
+            <View style={{ gap: 3 }}>
+              <Text style={{ fontSize: 16, fontFamily: 'Helvetica-Bold', color: '#0F172A' }}>NDOUKOUMANE</Text>
+              <Text style={{ fontSize: 8, color: '#4F46E5', fontFamily: 'Helvetica-Bold' }}>FUEL MANAGER</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end', gap: 2 }}>
+              <Text style={{ fontSize: 18, fontFamily: 'Helvetica-Bold', color: '#4F46E5' }}>FACTURE</Text>
+              <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: '#0F172A' }}>{f.numero}</Text>
+              <Text style={{ fontSize: 8, color: '#475569' }}>Date : {mfdate(f.date)}</Text>
+            </View>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+            <View style={{ flex: 1, backgroundColor: '#F8FAFC', borderRadius: 4, padding: 10, borderWidth: 1, borderColor: '#E2E8F0' }}>
+              <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#4F46E5', marginBottom: 4 }}>VÉHICULE</Text>
+              <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#0F172A' }}>{f.vehicule.immatriculation}</Text>
+              <Text style={{ fontSize: 7, color: '#475569' }}>{f.vehicule.marque} {f.vehicule.modele}</Text>
+            </View>
+            {f.vehicule.personnelAssigne && (
+              <View style={{ flex: 1, backgroundColor: '#F8FAFC', borderRadius: 4, padding: 10, borderWidth: 1, borderColor: '#E2E8F0' }}>
+                <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#4F46E5', marginBottom: 4 }}>CHAUFFEUR</Text>
+                <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#0F172A' }}>{f.vehicule.personnelAssigne.prenom} {f.vehicule.personnelAssigne.nom}</Text>
+              </View>
+            )}
+            <View style={{ flex: 1, backgroundColor: '#F8FAFC', borderRadius: 4, padding: 10, borderWidth: 1, borderColor: '#E2E8F0' }}>
+              <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#4F46E5', marginBottom: 4 }}>ÉMIS PAR</Text>
+              <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#0F172A' }}>{f.createdBy.name}</Text>
+            </View>
+          </View>
+
+          <View style={{ marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', backgroundColor: '#0F172A', borderRadius: 4, paddingVertical: 6, paddingHorizontal: 6 }}>
+              <Text style={[{ flex: 1.5, fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#FFFFFF' }]}>Type</Text>
+              <Text style={[{ flex: 3, fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#FFFFFF' }]}>Description</Text>
+              <Text style={[{ flex: 1, fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#FFFFFF', textAlign: 'right' }]}>Qté</Text>
+              <Text style={[{ flex: 1.5, fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#FFFFFF', textAlign: 'right' }]}>Prix unit.</Text>
+              <Text style={[{ flex: 1.5, fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#FFFFFF', textAlign: 'right' }]}>Montant</Text>
+            </View>
+            {f.lignes.map((l, i) => (
+              <View key={l.id} style={{ flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', backgroundColor: i % 2 === 1 ? '#F8FAFC' : '#FFFFFF' }}>
+                <Text style={{ flex: 1.5, fontSize: 7, color: l.type === 'CARBURANT' ? '#2563EB' : l.type === 'VIDANGE' ? '#D97706' : '#475569', fontFamily: 'Helvetica-Bold' }}>{l.type === 'CARBURANT' ? 'Carburant' : l.type === 'VIDANGE' ? 'Vidange' : 'Autre'}</Text>
+                <Text style={{ flex: 3, fontSize: 7, color: '#0F172A' }}>{l.description}</Text>
+                <Text style={{ flex: 1, fontSize: 7, color: '#475569', textAlign: 'right' }}>{l.quantite != null ? `${l.quantite}${l.type === 'CARBURANT' ? ' L' : ''}` : '—'}</Text>
+                <Text style={{ flex: 1.5, fontSize: 7, color: '#475569', textAlign: 'right' }}>{l.prixUnitaire != null ? mfcfa(l.prixUnitaire) : '—'}</Text>
+                <Text style={{ flex: 1.5, fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#0F172A', textAlign: 'right' }}>{mfcfa(l.montant)}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 16 }}>
+            <View style={{ width: 180, borderTopWidth: 2, borderTopColor: '#4F46E5', paddingTop: 8 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#E2E8F0', paddingTop: 4 }}>
+                <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: '#0F172A' }}>TOTAL</Text>
+                <Text style={{ fontSize: 12, fontFamily: 'Helvetica-Bold', color: '#DC2626' }}>{mfcfa(f.total)}</Text>
+              </View>
+            </View>
+          </View>
+
+          {fi < factures.length - 1 && (
+            <View style={{ borderBottomWidth: 1, borderBottomColor: '#E2E8F0', marginTop: 10, paddingBottom: 10 }} />
+          )}
+        </Page>
+      ))}
+      {/* Page récapitulative */}
+      {factures.length > 1 && (
+        <Page size="A4" style={{ backgroundColor: '#FFFFFF', padding: 40, fontFamily: 'Helvetica', fontSize: 9 }}>
+          <Text style={{ fontSize: 16, fontFamily: 'Helvetica-Bold', color: '#0F172A', marginBottom: 20 }}>Récapitulatif</Text>
+          <View style={{ flexDirection: 'row', backgroundColor: '#0F172A', borderRadius: 4, paddingVertical: 6, paddingHorizontal: 6 }}>
+            <Text style={{ flex: 2, fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#FFFFFF' }}>N° Facture</Text>
+            <Text style={{ flex: 2, fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#FFFFFF' }}>Véhicule</Text>
+            <Text style={{ flex: 1.5, fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#FFFFFF', textAlign: 'right' }}>Date</Text>
+            <Text style={{ flex: 1.5, fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#FFFFFF', textAlign: 'right' }}>Montant</Text>
+          </View>
+          {factures.map(f => (
+            <View key={f.id} style={{ flexDirection: 'row', paddingVertical: 5, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}>
+              <Text style={{ flex: 2, fontSize: 7, color: '#0F172A', fontFamily: 'Helvetica-Bold' }}>{f.numero}</Text>
+              <Text style={{ flex: 2, fontSize: 7, color: '#475569' }}>{f.vehicule.immatriculation}</Text>
+              <Text style={{ flex: 1.5, fontSize: 7, color: '#475569', textAlign: 'right' }}>{mfdate(f.date)}</Text>
+              <Text style={{ flex: 1.5, fontSize: 7, color: '#0F172A', fontFamily: 'Helvetica-Bold', textAlign: 'right' }}>{mfcfa(f.total)}</Text>
+            </View>
+          ))}
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
+            <View style={{ width: 180, borderTopWidth: 2, borderTopColor: '#4F46E5', paddingTop: 8 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold', color: '#0F172A' }}>TOTAL GÉNÉRAL</Text>
+                <Text style={{ fontSize: 13, fontFamily: 'Helvetica-Bold', color: '#DC2626' }}>{mfcfa(totalGeneral)}</Text>
+              </View>
+            </View>
+          </View>
+        </Page>
+      )}
+    </Document>
+  )
+}
+export { MultiFacturePDFDocument }
+
+// ─── Bouton téléchargement groupé ────────────────────────────────────────────
+export function MultiFactureDownloadButton({ factures }: { factures: FacturePDFData[] }) {
+  if (factures.length === 0) return null
+  return (
+    <PDFDownloadLink
+      document={<MultiFacturePDFDocument factures={factures} />}
+      fileName={`factures-groupées-${factures.length}-factures.pdf`}
+    >
+      {({ loading, error }) => (
+        <button
+          disabled={loading}
+          className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+        >
+          {loading ? (
+            <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          )}
+          {loading ? 'Génération...' : `PDF groupé (${factures.length})`}
         </button>
       )}
     </PDFDownloadLink>
