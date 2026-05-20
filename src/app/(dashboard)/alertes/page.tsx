@@ -48,7 +48,7 @@ export default function AlertesPage() {
 
   const avecVerrou = vehicules
     .map(v => ({ ...v, verrou: getVerrou(v) }))
-    .filter(v => v.verrou.joursRestants <= 5)
+    .filter(v => !v.verrou.jamaisRavitaille && v.verrou.joursRestants <= 5)
     .sort((a, b) => a.verrou.joursRestants - b.verrou.joursRestants)
 
   const filtres = {
