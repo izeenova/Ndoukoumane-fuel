@@ -738,25 +738,13 @@ export default function FacturesPage() {
                           </div>
                         </div>
 
-                        {/* TypeCarburant + Mode saisie — seulement si CARBURANT */}
+                        {/* Type carburant détecté — seulement si CARBURANT */}
                         {l.type === 'CARBURANT' && (
-                          <div className="space-y-2">
-                            {/* Type carburant */}
-                            <div className="flex gap-2">
-                              {(['ESSENCE', 'GASOIL'] as const).map(tc => (
-                                <button key={tc} type="button"
-                                  onClick={() => updateLigne(idx, 'typeCarburant', tc)}
-                                  className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors ${
-                                    l.typeCarburant === tc
-                                      ? tc === 'GASOIL'
-                                        ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
-                                        : 'bg-blue-500/20 border-blue-500/50 text-blue-300'
-                                      : 'bg-transparent border-slate-700 text-slate-500 hover:border-slate-500'
-                                  }`}>
-                                  {tc === 'ESSENCE' ? '⛽ Essence' : '🛢️ Gasoil'}
-                                </button>
-                              ))}
-                            </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs px-2 py-1 rounded font-medium ${l.typeCarburant === 'GASOIL' ? 'bg-amber-500/20 text-amber-300' : 'bg-blue-500/20 text-blue-300'}`}>
+                              {l.typeCarburant === 'GASOIL' ? 'Gasoil' : 'Essence'}
+                            </span>
+                            <span className="text-slate-500 text-xs">{l.prixUnitaire} FCFA/L</span>
                           </div>
                         )}
 
