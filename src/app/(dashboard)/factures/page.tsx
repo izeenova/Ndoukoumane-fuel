@@ -148,8 +148,8 @@ export default function FacturesPage() {
   const [formNotes, setFormNotes]         = useState('')
   const [lignes, setLignes]               = useState<LigneForm[]>([emptyLigne()])
   const [pieceJointe, setPieceJointe]     = useState<PieceJointeResult | null>(null)
-  const [prixEssence, setPrixEssence]     = useState('650')
-  const [prixGasoil, setPrixGasoil]       = useState('700')
+  const [prixEssence, setPrixEssence]     = useState('')
+  const [prixGasoil, setPrixGasoil]       = useState('')
 
   // Édition
   const [editingId, setEditingId]         = useState<string | null>(null)
@@ -178,7 +178,22 @@ export default function FacturesPage() {
     fetch('/api/vehicules').then(r => r.json()).then(d => setVehicules(Array.isArray(d) ? d : []))
     fetch('/api/auth/session').then(r => r.json()).then(d => setUserRole(d?.user?.role || ''))
     fetch('/api/budget').then(r => r.json()).then(d => { if (d.solde !== undefined) setBudgetSolde(d.solde) })
+    fetch('/api/parametres').then(r => r.json()).then(d => {
+      if (d.prixCarburant) setPrixEssence(d.prixCarburant)
+      if (d.prixGasoil) setPrixGasoil(d.prixGasoil)
+    })
   }, [])
+
+  // Mettre à jour les lignes carburant quand les prix arrivent
+  useEffect(() => {
+    if (!prixEssence || !prixGasoil || !formVehiculeObj) return
+    const prix = formVehiculeObj.typeCarburant === 'GASOIL' ? prixGasoil : prixEssence
+    setLignes(prev => prev.map(l =>
+      l.type === 'CARBURANT' && (!l.prixUnitaire || l.prixUnitaire === '650' || l.prixUnitaire === '700')
+        ? { ...l, prixUnitaire: prix }
+        : l
+    ))
+  }, [prixEssence, prixGasoil, formVehiculeObj])
 
   // Récupérer le prochain numéro auto — basé sur la date sélectionnée
   const fetchNextNumero = async (date?: string) => {
@@ -292,8 +307,6 @@ export default function FacturesPage() {
       setError(data.error || 'Erreur')
     } else {
       setShowModal(false); resetForm(); fetchFactures()
-    fetch('/api/budget').then(r => r.json()).then(d => { if (d.solde !== undefined) setBudgetSolde(d.solde) })
-    fetch('/api/parametres').then(r => r.json()).then(d => { setPrixEssence(d.prixCarburant || '650'); setPrixGasoil(d.prixGasoil || '700') })
     }
     setSubmitting(false)
   }
@@ -673,7 +686,7 @@ export default function FacturesPage() {
                   value={formVehicule}
                   onChange={(id, v) => {
                     setFormVehicule(id); setFormVehiculeObj(v)
-                    if (v) {
+                    if (v && prixEssence && prixGasoil) {
                       const prix = v.typeCarburant === 'GASOIL' ? prixGasoil : prixEssence
                       setLignes(prev => prev.map(l =>
                         l.type === 'CARBURANT' ? { ...l, typeCarburant: v.typeCarburant, prixUnitaire: prix } : l
