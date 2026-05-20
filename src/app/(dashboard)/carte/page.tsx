@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { formatCFA, formatDate } from '@/lib/utils'
+
+const RapportCarteDownloadButton = dynamic(
+  () => import('@/components/FacturePDFActions').then(m => m.RapportCarteDownloadButton),
+  { ssr: false, loading: () => null }
+)
 
 interface Recharge {
   id: string
@@ -163,65 +169,6 @@ export default function CartePage() {
     setDeletingId(null)
     fetchBudget()
     fetchHistorique()
-  }
-
-  const handleExportRapport = () => {
-    const periodLabel = HIST_PERIODES.find(p => p.value === histPeriode)?.label || 'Période personnalisée'
-    const filtered = historique.filter(t =>
-      histTypeFilter === 'TOUS' ? true :
-      histTypeFilter === 'ENTREES' ? t.montant > 0 :
-      t.montant < 0
-    )
-    const soldeFinal = filtered.length > 0 ? filtered[0].soldeCumul : 0
-    const soldeInitial = filtered.length > 0 ? filtered[filtered.length - 1].soldePrecedent : 0
-
-    const rows = filtered.map(t => {
-      const label = t.type === 'RECHARGE' ? 'Recharge' :
-        t.type === 'CARBURANT' ? 'Carburant' :
-        t.type === 'FACTURE' ? 'Facture' : 'Vidange'
-      const signe = t.montant > 0 ? '+' : ''
-      return `<tr>
-        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px">${label}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px">${t.description}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px">${new Date(t.date).toLocaleDateString('fr-FR')}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;text-align:right">${signe}${formatCFA(t.montant)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;text-align:right">${formatCFA(t.soldeCumul)}</td>
-      </tr>`
-    }).join('')
-
-    const html = `<!DOCTYPE html>
-<html lang="fr">
-<head><meta charset="UTF-8"><title>Rapport Carte Essence</title>
-<style>body{font-family:Arial,sans-serif;padding:40px;max-width:800px;margin:auto}
-h1{color:#1e293b;font-size:20px;border-bottom:2px solid #4f46e5;padding-bottom:10px}
-table{width:100%;border-collapse:collapse;margin:16px 0}
-th{background:#1e293b;color:white;padding:8px 10px;font-size:11px;text-align:left}
-th.right{text-align:right}
-.total{background:#f1f5f9;padding:12px;border-radius:6px;margin-top:12px}
-.total div{display:flex;justify-content:space-between;padding:4px 0}
-.footer{color:#94a3b8;font-size:11px;margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0}</style></head>
-<body>
-<h1>Rapport Carte Essence</h1>
-<p style="color:#475569;font-size:13px">Période : ${periodLabel}${histDateDebut ? ' (du ' + histDateDebut + ' au ' + (histDateFin || histDateDebut) + ')' : ''}</p>
-<table>
-<thead><tr><th>Type</th><th>Description</th><th>Date</th><th class="right">Montant</th><th class="right">Solde</th></tr></thead>
-<tbody>${rows}</tbody></table>
-<div class="total">
-<div><span>Solde de début de période</span><strong>${formatCFA(soldeInitial)}</strong></div>
-<div><span>Solde de fin de période</span><strong>${soldeFinal < 0 ? '-' : ''}${formatCFA(soldeFinal)}</strong></div>
-<div style="font-size:14px;border-top:1px solid #cbd5e1;padding-top:8px;margin-top:4px">
-<span>Nombre de mouvements</span><strong>${filtered.length}</strong></div>
-</div>
-<div class="footer">Généré par NDOUKOUMANE Fuel Manager</div>
-</body></html>`
-
-    const blob = new Blob([html], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `rapport-carte-${histDateDebut || 'tout'}-${histDateFin || 'fin'}.html`
-    a.click()
-    URL.revokeObjectURL(url)
   }
 
   const handleReset = async () => {
@@ -408,13 +355,33 @@ th.right{text-align:right}
             <div className="px-5 py-4 border-b border-slate-700/50 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <h3 className="text-white font-semibold text-sm">Historique des mouvements</h3>
-                <button onClick={handleExportRapport}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium transition-colors flex-shrink-0">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Télécharger le rapport
-                </button>
+                <RapportCarteDownloadButton
+                  transactions={historique.filter(t =>
+                    histTypeFilter === 'TOUS' ? true :
+                    histTypeFilter === 'ENTREES' ? t.montant > 0 :
+                    t.montant < 0
+                  )}
+                  soldeInitial={(() => {
+                    const f = historique.filter(t =>
+                      histTypeFilter === 'TOUS' ? true :
+                      histTypeFilter === 'ENTREES' ? t.montant > 0 :
+                      t.montant < 0)
+                    return f.length > 0 ? f[f.length - 1].soldePrecedent : 0
+                  })()}
+                  soldeFinal={(() => {
+                    const f = historique.filter(t =>
+                      histTypeFilter === 'TOUS' ? true :
+                      histTypeFilter === 'ENTREES' ? t.montant > 0 :
+                      t.montant < 0)
+                    return f.length > 0 ? f[0].soldeCumul : 0
+                  })()}
+                  periodeLabel={HIST_PERIODES.find(p => p.value === histPeriode)?.label || 'Période personnalisée'}
+                  nbMouvements={historique.filter(t =>
+                    histTypeFilter === 'TOUS' ? true :
+                    histTypeFilter === 'ENTREES' ? t.montant > 0 :
+                    t.montant < 0
+                  ).length}
+                />
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Périodes prédéfinies */}
                   {HIST_PERIODES.map(p => (

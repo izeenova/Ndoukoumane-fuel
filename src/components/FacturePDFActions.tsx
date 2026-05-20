@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { PDFDownloadLink, PDFViewer, Document, Page, View, Text } from '@react-pdf/renderer'
 import { FacturePDFDocument, type FacturePDFData } from './FacturePDFDocument'
+import { RapportCartePDFDocument, type TransactionData } from './RapportCartePDFDocument'
 
 // ─── Bouton de téléchargement ─────────────────────────────────────────────────
 export function FactureDownloadButton({ facture }: { facture: FacturePDFData }) {
@@ -174,6 +175,42 @@ export function MultiFactureDownloadButton({ factures }: { factures: FacturePDFD
             </svg>
           )}
           {loading ? 'Génération...' : `PDF groupé (${factures.length})`}
+        </button>
+      )}
+    </PDFDownloadLink>
+  )
+}
+
+// ─── Bouton téléchargement rapport carte ─────────────────────────────────────
+export function RapportCarteDownloadButton({ transactions, soldeInitial, soldeFinal, periodeLabel, nbMouvements }: {
+  transactions: TransactionData[]
+  soldeInitial: number
+  soldeFinal: number
+  periodeLabel: string
+  nbMouvements: number
+}) {
+  if (transactions.length === 0) return null
+  return (
+    <PDFDownloadLink
+      document={<RapportCartePDFDocument transactions={transactions} soldeInitial={soldeInitial} soldeFinal={soldeFinal} periodeLabel={periodeLabel} nbMouvements={nbMouvements} />}
+      fileName={`rapport-carte-${periodeLabel.toLowerCase().replace(/\s+/g, '-')}.pdf`}
+    >
+      {({ loading }) => (
+        <button
+          disabled={loading}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors flex-shrink-0"
+        >
+          {loading ? (
+            <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          )}
+          {loading ? 'Génération...' : 'Télécharger le rapport'}
         </button>
       )}
     </PDFDownloadLink>
