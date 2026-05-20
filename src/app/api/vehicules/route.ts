@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
         alerte: true,
         personnelAssigne: { select: { id: true, prenom: true, nom: true } },
         sorties: { take: 1, orderBy: { date: 'desc' }, select: { date: true } },
+        factures: { take: 1, orderBy: { date: 'desc' }, include: { lignes: { where: { type: 'CARBURANT' } } } },
       },
       orderBy: { immatriculation: 'asc' },
     })

@@ -10,14 +10,23 @@ interface VehiculeRavitaillement {
   typeCarburant: string
   periodeCarburation: number
   sorties: { date: string }[]
+  factures: { date: string; lignes: { type: string }[] }[]
   personnelAssigne: { prenom: string; nom: string } | null
 }
 
+function getDateDernierPlein(v: VehiculeRavitaillement): string | null {
+  // Priorité aux sorties (ancien système), puis aux factures carburant
+  if (v.sorties?.length > 0) return v.sorties[0].date
+  if (v.factures?.length > 0 && v.factures[0].lignes?.some(l => l.type === 'CARBURANT')) return v.factures[0].date
+  return null
+}
+
 function getVerrou(v: VehiculeRavitaillement) {
-  if (!v.sorties || v.sorties.length === 0) {
+  const dateDernierPlein = getDateDernierPlein(v)
+  if (!dateDernierPlein) {
     return { daysSince: 9999, joursRestants: -9999, overdue: true, jamaisRavitaille: true }
   }
-  const daysSince = Math.floor((Date.now() - new Date(v.sorties[0].date).getTime()) / (1000 * 60 * 60 * 24))
+  const daysSince = Math.floor((Date.now() - new Date(dateDernierPlein).getTime()) / (1000 * 60 * 60 * 24))
   const joursRestants = v.periodeCarburation - daysSince
   return { daysSince, joursRestants, overdue: joursRestants <= 0, jamaisRavitaille: false }
 }

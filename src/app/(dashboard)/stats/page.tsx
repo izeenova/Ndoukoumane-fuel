@@ -43,6 +43,9 @@ export default function StatsPage() {
   const [vehicules, setVehicules] = useState<VehiculeStat[]>([])
   const [error, setError] = useState('')
   const [debug, setDebug] = useState('')
+  const [detailId, setDetailId] = useState<string | null>(null)
+  const [detailData, setDetailData] = useState<any>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
 
   const fetchStats = useCallback(async () => {
     setLoading(true)
@@ -68,6 +71,17 @@ export default function StatsPage() {
   }, [periode])
 
   useEffect(() => { fetchStats() }, [fetchStats])
+
+  const fetchDetail = async (vehiculeId: string) => {
+    setDetailLoading(true)
+    setDetailId(vehiculeId)
+    try {
+      const res = await fetch(`/api/vehicules/${vehiculeId}/stats`)
+      const data = await res.json()
+      if (res.ok) setDetailData(data)
+    } catch {}
+    setDetailLoading(false)
+  }
 
   // Totaux pour les barres de progression
   const maxLitres = Math.max(...classement.map(c => c.litres), 1)
@@ -273,7 +287,7 @@ export default function StatsPage() {
                         const pct = Math.round((v.coutTotal / maxCoutVehicule) * 100)
                         const pctCarburant = v.coutTotal > 0 ? Math.round((v.coutCarburant / v.coutTotal) * 100) : 0
                         return (
-                          <tr key={v.vehicule.id} className="hover:bg-slate-800/30 transition-colors">
+                          <tr key={v.vehicule.id} onClick={() => fetchDetail(v.vehicule.id)} className="hover:bg-slate-800/30 transition-colors cursor-pointer">
                             <td className="px-5 py-4">
                               <div className="flex items-center gap-3">
                                 {/* Rang */}
@@ -353,6 +367,101 @@ export default function StatsPage() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal détail véhicule ── */}
+      {detailId && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-[#1E293B] rounded-2xl border border-slate-700/50 w-full max-w-lg shadow-2xl my-4">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
+              <h3 className="text-white font-semibold">
+                {detailData?.vehicule?.immatriculation || 'Chargement...'}
+              </h3>
+              <button onClick={() => { setDetailId(null); setDetailData(null) }} className="text-slate-400 hover:text-white">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-5">
+              {detailLoading ? (
+                <p className="text-center py-8 text-slate-500 text-sm">Chargement...</p>
+              ) : detailData ? (
+                <>
+                  {/* Résumé */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-[#0F172A] rounded-xl border border-slate-700/50 p-3">
+                      <p className="text-slate-400 text-xs">Dernier plein</p>
+                      <p className="text-white font-bold text-sm mt-0.5">
+                        {detailData.resume.joursDepuisDernierPlein !== null
+                          ? `Il y a ${detailData.resume.joursDepuisDernierPlein} jour${detailData.resume.joursDepuisDernierPlein > 1 ? 's' : ''}`
+                          : 'Aucun'
+                        }
+                      </p>
+                    </div>
+                    <div className="bg-[#0F172A] rounded-xl border border-slate-700/50 p-3">
+                      <p className="text-slate-400 text-xs">Consommation moyenne/mois</p>
+                      <p className="text-orange-400 font-bold text-sm mt-0.5">
+                        {detailData.resume.moyenneMensuelleLitres.toFixed(1)} L
+                      </p>
+                      <p className="text-slate-500 text-xs">
+                        {detailData.resume.moyenneMensuelleMontant.toLocaleString('fr-FR')} FCFA
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Dernières factures carburant */}
+                  <div>
+                    <h4 className="text-slate-400 text-xs font-semibold uppercase mb-2">Derniers rechargements</h4>
+                    {detailData.dernieresFactures.length === 0 ? (
+                      <p className="text-slate-600 text-sm">Aucun</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {detailData.dernieresFactures.map((f: any) => (
+                          <div key={f.id} className="bg-[#0F172A] rounded-xl border border-slate-700/50 p-3 flex items-center justify-between">
+                            <div>
+                              <p className="text-white text-sm font-medium">{f.numero}</p>
+                              <p className="text-slate-500 text-xs">{new Date(f.date).toLocaleDateString('fr-FR')}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-orange-400 font-semibold text-sm">{f.litres.toFixed(1)} L</p>
+                              <p className="text-slate-500 text-xs">{f.montant.toLocaleString('fr-FR')} FCFA</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Dernières réparations */}
+                  <div>
+                    <h4 className="text-slate-400 text-xs font-semibold uppercase mb-2">Dernières réparations</h4>
+                    {detailData.dernieresReparations.length === 0 ? (
+                      <p className="text-slate-600 text-sm">Aucune</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {detailData.dernieresReparations.map((r: any) => (
+                          <div key={r.id} className="bg-[#0F172A] rounded-xl border border-slate-700/50 p-3">
+                            <div className="flex items-center justify-between">
+                              <p className="text-white text-sm font-medium">{r.description}</p>
+                              <p className="text-orange-400 font-semibold text-sm">{r.cout.toLocaleString('fr-FR')} FCFA</p>
+                            </div>
+                            <div className="flex items-center gap-3 mt-1">
+                              <p className="text-slate-500 text-xs">{new Date(r.date).toLocaleDateString('fr-FR')}</p>
+                              {r.mecanicien && <p className="text-slate-500 text-xs">· {r.mecanicien}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="text-center py-8 text-red-400 text-sm">Erreur de chargement</p>
+              )}
+            </div>
           </div>
         </div>
       )}
