@@ -27,6 +27,7 @@ model User {
   suppressions     SuppressionLog[]  @relation("SuppressionLogCreatedBy")
   vidangesCreees   Vidange[]         @relation("VidangeCreatedBy")
   facturesCreees   Facture[]         @relation("FactureCreatedBy")
+  modifications    ModificationFactureLog[] @relation("ModificationCreatedBy")
 }
 
 enum RoleUser {
@@ -216,6 +217,8 @@ model Facture {
   pieceJointeNom String?      // Nom original du fichier
   pieceJointeType String?     // MIME type : image/jpeg, application/pdf…
   lignes       LigneFacture[]
+  modifications   ModificationFactureLog[]
+
   createdById  String
   createdBy    User           @relation("FactureCreatedBy", fields: [createdById], references: [id])
   createdAt    DateTime       @default(now())
@@ -243,4 +246,14 @@ model SuppressionLog {
   createdById String
   createdBy   User     @relation("SuppressionLogCreatedBy", fields: [createdById], references: [id])
   createdAt   DateTime @default(now())
+}
+
+model ModificationFactureLog {
+  id          String   @id @default(cuid())
+  factureId   String
+  facture     Facture  @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User     @relation("ModificationCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  details     String   // JSON : anciennes et nouvelles valeurs
 }

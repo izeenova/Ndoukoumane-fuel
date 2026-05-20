@@ -149,6 +149,14 @@ export default function FacturesPage() {
   const [lignes, setLignes]               = useState<LigneForm[]>([emptyLigne()])
   const [pieceJointe, setPieceJointe]     = useState<PieceJointeResult | null>(null)
 
+  // Édition
+  const [editingId, setEditingId]         = useState<string | null>(null)
+
+  // Historique
+  const [histFactureId, setHistFactureId] = useState<string | null>(null)
+  const [histModifs, setHistModifs]       = useState<any[]>([])
+  const [loadingHist, setLoadingHist]     = useState(false)
+
   const fetchFactures = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams({ page: page.toString() })
@@ -272,17 +280,24 @@ export default function FacturesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true); setError('')
-    const res = await fetch('/api/factures', {
-      method: 'POST',
+
+    const isEditing = !!editingId
+    const url = isEditing ? `/api/factures/${editingId}` : '/api/factures'
+    const method = isEditing ? 'PUT' : 'POST'
+
+    const res = await fetch(url, {
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         numero:          formNumero,
         vehiculeId:      formVehicule,
         date:            formDate || undefined,
         notes:           formNotes || undefined,
-        pieceJointe:     pieceJointe?.url      || undefined,
-        pieceJointeNom:  pieceJointe?.nom      || undefined,
-        pieceJointeType: pieceJointe?.type     || undefined,
+        ...(isEditing ? {} : {
+          pieceJointe:     pieceJointe?.url      || undefined,
+          pieceJointeNom:  pieceJointe?.nom      || undefined,
+          pieceJointeType: pieceJointe?.type     || undefined,
+        }),
         lignes: lignes.map(l => ({
           type:          l.type,
           typeCarburant: l.type === 'CARBURANT' ? l.typeCarburant : undefined,
@@ -307,7 +322,44 @@ export default function FacturesPage() {
   const resetForm = () => {
     setFormNumero(''); setFormVehicule(''); setFormVehiculeObj(null)
     setFormDate(''); setFormNotes(''); setLignes([emptyLigne()])
-    setPieceJointe(null); setError('')
+    setPieceJointe(null); setError(''); setEditingId(null)
+  }
+
+  const openEdit = async (facture: Facture) => {
+    const res = await fetch(`/api/factures/${facture.id}`)
+    const data = await res.json()
+    if (!res.ok) return
+
+    setEditingId(facture.id)
+    setFormNumero(data.numero)
+    setFormVehicule(data.vehiculeId)
+    setFormVehiculeObj(data.vehicule || null)
+    setFormDate(data.date ? new Date(data.date).toISOString().slice(0, 16) : '')
+    setFormNotes(data.notes || '')
+    setPieceJointe(data.pieceJointe ? { url: data.pieceJointe, nom: data.pieceJointeNom, type: data.pieceJointeType } : null)
+    setLignes(data.lignes?.length > 0
+      ? data.lignes.map((l: any) => ({
+          type: l.type,
+          typeCarburant: l.typeCarburant || (formVehiculeObj?.typeCarburant || 'ESSENCE'),
+          description: l.description || '',
+          quantite: l.quantite?.toString() || '',
+          prixUnitaire: l.prixUnitaire?.toString() || '',
+          montant: l.montant.toString(),
+          notes: l.notes || '',
+          saisieMode: 'montant' as 'litres' | 'montant',
+        }))
+      : [emptyLigne()]
+    )
+    setShowModal(true)
+  }
+
+  const fetchHistorique = async (factureId: string) => {
+    setLoadingHist(true)
+    setHistFactureId(factureId)
+    const res = await fetch(`/api/factures/${factureId}/modifications`)
+    const data = await res.json()
+    setHistModifs(Array.isArray(data) ? data : [])
+    setLoadingHist(false)
   }
 
   const handleDelete = async (id: string) => {
@@ -456,6 +508,22 @@ export default function FacturesPage() {
                       </button>
                       <FactureDownloadButton facture={f} />
                       {userRole === 'ADMIN' && (
+                        <button onClick={() => openEdit(f)} title="Modifier"
+                          className="text-slate-500 hover:text-blue-400 transition-colors p-1.5 rounded-lg hover:bg-blue-500/10">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      )}
+                      {userRole === 'ADMIN' && (
+                        <button onClick={() => fetchHistorique(f.id)} title="Historique"
+                          className="text-slate-500 hover:text-amber-400 transition-colors p-1.5 rounded-lg hover:bg-amber-500/10">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </button>
+                      )}
+                      {userRole === 'ADMIN' && (
                         <button onClick={() => handleDelete(f.id)} disabled={deletingId === f.id}
                           className="text-slate-600 hover:text-red-400 transition-colors disabled:opacity-40 p-1.5 rounded-lg hover:bg-red-500/10">
                           {deletingId === f.id
@@ -581,7 +649,7 @@ export default function FacturesPage() {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-[#1E293B] rounded-2xl border border-slate-700/50 w-full max-w-2xl shadow-2xl my-4">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
-              <h3 className="text-white font-semibold">Nouvelle facture</h3>
+              <h3 className="text-white font-semibold">{editingId ? 'Modifier la facture' : 'Nouvelle facture'}</h3>
               <button onClick={() => { setShowModal(false); resetForm() }} className="text-slate-400 hover:text-white">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -853,10 +921,73 @@ export default function FacturesPage() {
                   disabled={submitting || !formVehicule || totalFacture <= 0}
                   className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
                   {submitting && <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>}
-                  {submitting ? 'Enregistrement...' : `Valider — ${formatCFA(totalFacture)}`}
+                   {submitting ? 'Enregistrement...' : `${editingId ? 'Modifier' : 'Valider'} — ${formatCFA(totalFacture)}`}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal historique modifications ── */}
+      {histFactureId && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-[#1E293B] rounded-2xl border border-slate-700/50 w-full max-w-lg shadow-2xl my-4">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
+              <h3 className="text-white font-semibold">Historique des modifications</h3>
+              <button onClick={() => { setHistFactureId(null); setHistModifs([]) }} className="text-slate-400 hover:text-white">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6">
+              {loadingHist ? (
+                <p className="text-center py-8 text-slate-500 text-sm">Chargement...</p>
+              ) : histModifs.length === 0 ? (
+                <p className="text-center py-8 text-slate-500 text-sm">Aucune modification enregistrée</p>
+              ) : (
+                <div className="space-y-3">
+                  {histModifs.map((modif: any, idx: number) => {
+                    let details: any = null
+                    try { details = JSON.parse(modif.details) } catch {}
+                    const ancienTotal = details?.ancienTotal || 0
+                    const facture = factures.find(f => f.id === histFactureId)
+                    return (
+                      <div key={modif.id} className="bg-[#0F172A] rounded-xl border border-slate-700/50 p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-slate-400 text-xs">
+                            {modif.createdBy?.name} · {new Date(modif.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-medium">Modification</span>
+                        </div>
+                        {details && (
+                          <div className="text-sm space-y-1">
+                            {details.ancienNumero && (
+                              <p className="text-slate-400">N° <span className="text-slate-500">{details.ancienNumero}</span></p>
+                            )}
+                            <p className="text-slate-400">
+                              Total : <span className="text-slate-500">{formatCFA(ancienTotal)}</span>
+                              <span className="text-slate-600 mx-1">→</span>
+                              <span className="text-white font-semibold">{formatCFA(facture?.total || 0)}</span>
+                            </p>
+                            {details?.anciennesLignes && (
+                              <p className="text-slate-500 text-xs">{details.anciennesLignes.length} ligne{details.anciennesLignes.length > 1 ? 's' : ''} avant modification</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+              <div className="mt-4">
+                <button onClick={() => { setHistFactureId(null); setHistModifs([]) }}
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl text-sm font-medium">
+                  Fermer
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
