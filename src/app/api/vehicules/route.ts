@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     const vehicule = await prisma.vehicule.create({
       data: {
         immatriculation:    immatriculation.toUpperCase().trim(),
-        type,
+        type:              'VOITURE',
         marque:             marque.trim(),
         modele:             modele.trim(),
         annee:              annee ? parseInt(annee) : null,

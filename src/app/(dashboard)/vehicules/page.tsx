@@ -37,7 +37,7 @@ const STATUT_COLORS: Record<string, string> = {
 }
 
 const emptyForm = {
-  immatriculation: '', type: 'CAMION', marque: '', modele: '',
+  immatriculation: '', type: 'VOITURE', marque: '', modele: '',
   annee: '', capaciteReservoir: '', niveauActuel: '0',
   statut: 'ACTIF', notes: '', periodeCarburation: '30', typeCarburant: 'ESSENCE' as 'ESSENCE' | 'GASOIL',
 }
@@ -252,7 +252,7 @@ export default function VehiculesPage() {
                         </div>
                         <div>
                           <p className="text-white font-semibold text-sm">{v.immatriculation}</p>
-                          <p className="text-slate-500 text-xs">{v.marque} {v.modele}{v.annee ? ` · ${v.annee}` : ''} · {getTypeVehiculeLabel(v.type)}
+                          <p className="text-slate-500 text-xs">{v.marque} {v.modele}{v.annee ? ` · ${v.annee}` : ''}
                             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ml-1 ${v.typeCarburant === 'GASOIL' ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400'}`}>
                               {v.typeCarburant === 'GASOIL' ? 'Gasoil' : 'Essence'}
                             </span>
@@ -331,14 +331,6 @@ export default function VehiculesPage() {
                   <input value={form.immatriculation} onChange={e => setForm(f => ({ ...f, immatriculation: e.target.value }))}
                     className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
                     placeholder="DK-1234-AB" required />
-                </div>
-                <div>
-                  <label className="block text-sm text-slate-300 mb-1.5">Type *</label>
-                  <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                    className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="CAMION">Camion</option>
-                    <option value="VOITURE">Voiture</option>
-                  </select>
                 </div>
                 <div>
                   <label className="block text-sm text-slate-300 mb-1.5">Statut</label>

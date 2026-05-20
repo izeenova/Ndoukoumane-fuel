@@ -59,7 +59,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     const updateData: any = {
       immatriculation:   immatriculation?.toUpperCase().trim(),
-      type,
       marque:            marque?.trim(),
       modele:            modele?.trim(),
       annee:             annee ? parseInt(annee) : null,
