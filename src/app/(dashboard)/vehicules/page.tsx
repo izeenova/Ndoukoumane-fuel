@@ -19,7 +19,7 @@ interface Vehicule {
   marque: string
   modele: string
   annee: number | null
-  capaciteReservoir: number
+  capaciteReservoir: number | null
   niveauActuel: number
   statut: 'ACTIF' | 'EN_REPARATION' | 'HORS_SERVICE'
   notes: string | null
@@ -106,7 +106,7 @@ export default function VehiculesPage() {
     setForm({
       immatriculation: v.immatriculation, type: v.type,
       marque: v.marque, modele: v.modele, annee: v.annee?.toString() || '',
-      capaciteReservoir: v.capaciteReservoir.toString(),
+      capaciteReservoir: v.capaciteReservoir?.toString() || '',
       niveauActuel: v.niveauActuel.toString(),
       statut: v.statut, notes: v.notes || '',
       periodeCarburation: v.periodeCarburation?.toString() || '30',
@@ -368,10 +368,10 @@ export default function VehiculesPage() {
                     placeholder="2022" min="1990" max="2030" />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-300 mb-1.5">Capacité réservoir (L) *</label>
+                  <label className="block text-sm text-slate-300 mb-1.5">Capacité réservoir (L)</label>
                   <input type="number" value={form.capaciteReservoir} onChange={e => setForm(f => ({ ...f, capaciteReservoir: e.target.value }))}
                     className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="70" required min="1" step="0.5" />
+                    placeholder="Optionnel" min="0" step="0.5" />
                 </div>
                 <div>
                   <label className="block text-sm text-slate-300 mb-1.5">Période carburant (jours)</label>

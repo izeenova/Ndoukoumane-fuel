@@ -49,7 +49,7 @@ model Vehicule {
   marque            String
   modele            String
   annee             Int?
-  capaciteReservoir Float          // en litres
+  capaciteReservoir Float?         // en litres (optionnel)
   niveauActuel      Float          @default(0) // en litres
   statut            StatutVehicule @default(ACTIF)
   notes             String?
@@ -64,7 +64,7 @@ model Vehicule {
   vidanges           Vidange[]
   factures           Facture[]
   personnelAssigne   Personnel?      @relation("VehiculeAssigne", fields: [personnelAssigneId], references: [id])
-  personnelAssigneId String?         @unique
+  personnelAssigneId String?
 }
 
 enum TypeVehicule {
@@ -93,7 +93,7 @@ model Personnel {
 
   sorties         SortieCarburant[]
   reparations     Reparation[]
-  vehiculeAssigne Vehicule?         @relation("VehiculeAssigne")
+  vehiculeAssigne Vehicule[]         @relation("VehiculeAssigne")
 }
 
 enum RolePersonnel {

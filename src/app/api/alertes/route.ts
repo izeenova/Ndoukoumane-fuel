@@ -16,10 +16,10 @@ export async function GET() {
 
     const alertes = vehiculesAvecAlerte.map(v => ({
       ...v,
-      pourcentage: v.capaciteReservoir > 0
+      pourcentage: v.capaciteReservoir && v.capaciteReservoir > 0
         ? Math.round((v.niveauActuel / v.capaciteReservoir) * 100)
         : 0,
-      enAlerte: v.alerte?.actif && v.capaciteReservoir > 0
+      enAlerte: v.alerte?.actif && v.capaciteReservoir && v.capaciteReservoir > 0
         ? (v.niveauActuel / v.capaciteReservoir) * 100 <= (v.alerte?.seuil || 20)
         : false,
     }))

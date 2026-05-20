@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const { immatriculation, type, marque, modele, annee, capaciteReservoir,
             niveauActuel, statut, notes, personnelAssigneId, newPersonnel, typeCarburant } = body
 
-    if (!immatriculation || !type || !marque || !modele || !capaciteReservoir) {
+    if (!immatriculation || !type || !marque || !modele) {
       return NextResponse.json({ error: 'Champs obligatoires manquants' }, { status: 400 })
     }
 
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
         marque:             marque.trim(),
         modele:             modele.trim(),
         annee:              annee ? parseInt(annee) : null,
-        capaciteReservoir:  parseFloat(capaciteReservoir),
+        capaciteReservoir:  capaciteReservoir ? parseFloat(capaciteReservoir) : null,
         niveauActuel:       parseFloat(niveauActuel || 0),
         statut:             statut || 'ACTIF',
         notes:              notes?.trim() || null,

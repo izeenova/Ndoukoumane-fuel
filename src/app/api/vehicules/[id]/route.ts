@@ -63,7 +63,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       marque:            marque?.trim(),
       modele:            modele?.trim(),
       annee:             annee ? parseInt(annee) : null,
-      capaciteReservoir: parseFloat(capaciteReservoir),
+      capaciteReservoir: capaciteReservoir ? parseFloat(capaciteReservoir) : null,
       niveauActuel:      parseFloat(niveauActuel || 0),
       statut,
       notes:             notes?.trim() || null,

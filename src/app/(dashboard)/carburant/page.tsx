@@ -27,7 +27,7 @@ interface Vehicule {
   sorties: { date: string }[]
 }
 
-const emptyForm = { vehiculeId: '', litres: '', montant: '', prixLitre: '650', date: '', notes: '', forcer: false, saisieMode: 'litres' as 'litres' | 'montant' }
+const emptyForm = { vehiculeId: '', litres: '', montant: '', prixLitre: '650', date: '', notes: '', forcer: false }
 
 
 
@@ -224,21 +224,16 @@ export default function CarburantPage() {
   }, [form.vehiculeId]) // eslint-disable-line
   const vehiculeStatus = selectedVehicule ? getVehiculeStatus(selectedVehicule) : null
 
-  // Calculs selon le mode de saisie
-  const litresCalcules = form.saisieMode === 'montant' && form.montant && form.prixLitre
+  // Calcul des litres à partir du montant saisi
+  const litresCalcules = form.montant && form.prixLitre
     ? (parseFloat(form.montant) / parseFloat(form.prixLitre))
     : null
-  const coutCalcule = form.saisieMode === 'litres' && form.litres && form.prixLitre
-    ? (parseFloat(form.litres) * parseFloat(form.prixLitre)).toFixed(0)
-    : form.saisieMode === 'montant' && form.montant ? form.montant
-    : '0'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true); setError('')
-    // Si mode montant, on calcule les litres avant d'envoyer
-    const litresEnvoyes = form.saisieMode === 'montant' && form.montant && form.prixLitre
+    const litresEnvoyes = form.montant && form.prixLitre
       ? (parseFloat(form.montant) / parseFloat(form.prixLitre)).toFixed(2)
-      : form.litres
+      : '0'
     const res = await fetch('/api/carburant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -249,8 +244,7 @@ export default function CarburantPage() {
         date: form.date,
         notes: form.notes,
         forcer: form.forcer,
-        // En mode montant, transmettre le montant exact pour éviter l'erreur d'arrondi
-        ...(form.saisieMode === 'montant' && form.montant ? { montantExact: form.montant } : {}),
+        montantExact: form.montant,
       }),
     })
     const data = await res.json()
@@ -608,50 +602,16 @@ export default function CarburantPage() {
                 </div>
               )}
 
-              {/* Toggle Litres / Montant */}
-              <div className="flex rounded-xl overflow-hidden border border-slate-700 p-1 gap-1 bg-[#0F172A]">
-                <button
-                  type="button"
-                  onClick={() => setForm(f => ({ ...f, saisieMode: 'litres', montant: '' }))}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${form.saisieMode === 'litres' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                >
-                  ⛽ En litres
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setForm(f => ({ ...f, saisieMode: 'montant', litres: '' }))}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${form.saisieMode === 'montant' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                >
-                  💰 En montant
-                </button>
-              </div>
-
+              {/* Saisie montant */}
               <div>
-                {form.saisieMode === 'litres' ? (
-                  <div>
-                    <label className="block text-sm text-slate-300 mb-1.5">Litres *</label>
-                    <input type="number" value={form.litres} onChange={e => setForm(f => ({ ...f, litres: e.target.value }))}
-                      className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="50" required min="1" step="0.5" />
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-sm text-slate-300 mb-1.5">Montant (FCFA) *</label>
-                    <input type="number" value={form.montant} onChange={e => setForm(f => ({ ...f, montant: e.target.value }))}
-                      className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="32500" required min="1" />
-                  </div>
-                )}
+                <label className="block text-sm text-slate-300 mb-1.5">Montant (FCFA) *</label>
+                <input type="number" value={form.montant} onChange={e => setForm(f => ({ ...f, montant: e.target.value }))}
+                  className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="32500" required min="1" />
               </div>
 
-              {/* Résumé calculé */}
-              {form.saisieMode === 'litres' && form.litres && form.prixLitre && (
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex items-center justify-between">
-                  <span className="text-blue-300 text-sm">Coût total calculé</span>
-                  <span className="text-white font-bold">{formatCFA(parseFloat(coutCalcule))}</span>
-                </div>
-              )}
-              {form.saisieMode === 'montant' && form.montant && form.prixLitre && litresCalcules !== null && (
+              {/* Litres équivalents calculés */}
+              {form.montant && form.prixLitre && litresCalcules !== null && (
                 <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex items-center justify-between">
                   <span className="text-blue-300 text-sm">Litres équivalents</span>
                   <span className="text-white font-bold">{litresCalcules.toFixed(2)} L</span>
