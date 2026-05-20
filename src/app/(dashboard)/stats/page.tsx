@@ -137,16 +137,16 @@ export default function StatsPage() {
           {/* ─── Résumé période ─────────────────────────────────────────── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 p-4">
-              <p className="text-slate-400 text-xs mb-1">Total chauffeurs</p>
-              <p className="text-white text-xl font-bold">{classement.length}</p>
+              <p className="text-slate-400 text-xs mb-1">Total litres carburant</p>
+              <p className="text-orange-400 text-xl font-bold">{formatLitres(vehicules.reduce((s, v) => s + v.litres, 0))}</p>
             </div>
             <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 p-4">
-              <p className="text-slate-400 text-xs mb-1">Total litres</p>
-              <p className="text-orange-400 text-xl font-bold">{formatLitres(classement.reduce((s, c) => s + c.litres, 0))}</p>
+              <p className="text-slate-400 text-xs mb-1">Dépenses carburant</p>
+              <p className="text-blue-400 text-xl font-bold">{formatCFA(vehicules.reduce((s, v) => s + v.coutCarburant, 0))}</p>
             </div>
             <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 p-4">
-              <p className="text-slate-400 text-xs mb-1">Total dépenses carburant</p>
-              <p className="text-blue-400 text-xl font-bold">{formatCFA(classement.reduce((s, c) => s + c.coutTotal, 0))}</p>
+              <p className="text-slate-400 text-xs mb-1">Dépenses réparations</p>
+              <p className="text-amber-400 text-xl font-bold">{formatCFA(vehicules.reduce((s, v) => s + v.coutReparations, 0))}</p>
             </div>
             <div className="bg-[#1E293B] rounded-xl border border-slate-700/50 p-4">
               <p className="text-slate-400 text-xs mb-1">Véhicules actifs</p>
@@ -168,9 +168,14 @@ export default function StatsPage() {
               </div>
             </div>
 
-            {classement.length === 0 ? (
+            {classement.length === 0 && vehicules.length > 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-slate-400 text-sm">Les consommations sont suivies par véhicule (via les factures)</p>
+                <p className="text-slate-500 text-xs mt-1">Consultez le tableau ci-dessous pour les détails par véhicule</p>
+              </div>
+            ) : classement.length === 0 ? (
               <div className="py-12 text-center">
-                <p className="text-slate-500 text-sm">Aucune sortie carburant sur cette période</p>
+                <p className="text-slate-500 text-sm">Aucune donnée sur cette période</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-800/60">
