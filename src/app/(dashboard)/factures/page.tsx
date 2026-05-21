@@ -666,7 +666,7 @@ export default function FacturesPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} noValidate className="p-6 space-y-5">
               {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 text-sm">{error}</div>}
 
               {/* N° + Date */}
@@ -711,7 +711,7 @@ export default function FacturesPage() {
                     }
                   }}
                 />
-                <input type="hidden" value={formVehicule} required />
+                <input type="hidden" value={formVehicule} />
               </div>
 
               {/* Notes */}

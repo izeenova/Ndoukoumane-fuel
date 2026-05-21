@@ -72,7 +72,7 @@ function VehiculeSelect({ vehicules, value, onSelect, required }: {
           </div>
         </div>
       )}
-      <input type="hidden" value={value} required={required} />
+      <input type="hidden" value={value} />
     </div>
   )
 }
@@ -302,7 +302,7 @@ export default function ReparationsPage() {
                 </svg>
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="p-6 space-y-4">
               {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 text-sm">{error}</div>}
               {!editItem && (
                 <VehiculeSelect vehicules={vehicules} value={form.vehiculeId}

@@ -106,7 +106,7 @@ function SearchableSelect({
         </div>
       )}
 
-      <input type="hidden" value={value} required={required} />
+      <input type="hidden" value={value} />
     </div>
   )
 }
@@ -370,7 +370,7 @@ export default function VidangesPage() {
                 </svg>
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="p-6 space-y-4">
               {error && (
                 <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 text-sm">{error}</div>
               )}
@@ -475,7 +475,7 @@ export default function VidangesPage() {
                 </svg>
               </button>
             </div>
-            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleEditSubmit} noValidate className="p-6 space-y-4">
               {editError && <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 text-sm">{editError}</div>}
               <div>
                 <label className="block text-sm text-slate-300 mb-1.5">Coût (FCFA) *</label>
