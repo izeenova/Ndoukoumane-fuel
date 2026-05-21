@@ -381,6 +381,7 @@ export default function CartePage() {
                     histTypeFilter === 'ENTREES' ? t.montant > 0 :
                     t.montant < 0
                   ).length}
+                  soldeActuel={budget.solde}
                 />
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Périodes prédéfinies */}

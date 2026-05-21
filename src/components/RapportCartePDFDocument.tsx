@@ -28,7 +28,7 @@ const s = StyleSheet.create({
   title: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: C.navy },
   subtitle: { fontSize: 8, color: C.indigo, marginTop: 2 },
   period: { fontSize: 9, color: C.slate, textAlign: 'right' },
-  summaryRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  summaryRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
   summaryBox: { flex: 1, backgroundColor: C.bg, borderRadius: 4, padding: 10, borderWidth: 1, borderColor: C.border },
   summaryLabel: { fontSize: 7, fontFamily: 'Helvetica-Bold', color: C.indigo, marginBottom: 4 },
   summaryValue: { fontSize: 14, fontFamily: 'Helvetica-Bold', color: C.navy },
@@ -53,13 +53,14 @@ const s = StyleSheet.create({
 })
 
 export function RapportCartePDFDocument({
-  transactions, soldeInitial, soldeFinal, periodeLabel, nbMouvements,
+  transactions, soldeInitial, soldeFinal, periodeLabel, nbMouvements, soldeActuel,
 }: {
   transactions: TransactionData[]
   soldeInitial: number
   soldeFinal: number
   periodeLabel: string
   nbMouvements: number
+  soldeActuel: number
 }) {
   const TYPE_COLORS: Record<string, string> = {
     RECHARGE: '#16A34A', CARBURANT: '#2563EB', FACTURE: '#7C3AED', VIDANGE: '#D97706',
@@ -85,12 +86,16 @@ export function RapportCartePDFDocument({
             <Text style={[s.summaryValue, { color: soldeInitial < 0 ? C.red : C.navy }]}>{fcfa(soldeInitial)}</Text>
           </View>
           <View style={s.summaryBox}>
-            <Text style={s.summaryLabel}>Solde fin</Text>
+            <Text style={s.summaryLabel}>Solde fin période</Text>
             <Text style={[s.summaryValue, { color: soldeFinal < 0 ? C.red : C.green }]}>{fcfa(soldeFinal)}</Text>
           </View>
           <View style={s.summaryBox}>
             <Text style={s.summaryLabel}>Mouvements</Text>
             <Text style={s.summaryValue}>{nbMouvements}</Text>
+          </View>
+          <View style={s.summaryBox}>
+            <Text style={s.summaryLabel}>Solde actuel</Text>
+            <Text style={[s.summaryValue, { color: soldeActuel < 0 ? C.red : C.navy }]}>{fcfa(soldeActuel)}</Text>
           </View>
         </View>
 
@@ -131,12 +136,16 @@ export function RapportCartePDFDocument({
             <Text style={[s.footerValue, { color: soldeInitial < 0 ? C.red : C.navy }]}>{fcfa(soldeInitial)}</Text>
           </View>
           <View style={s.footerBlock}>
-            <Text style={s.footerLabel}>Solde fin</Text>
+            <Text style={s.footerLabel}>Solde fin de période</Text>
             <Text style={[s.footerValue, { color: soldeFinal < 0 ? C.red : C.green }]}>{fcfa(soldeFinal)}</Text>
           </View>
           <View style={s.footerBlock}>
             <Text style={s.footerLabel}>Mouvements</Text>
             <Text style={s.footerValue}>{nbMouvements}</Text>
+          </View>
+          <View style={s.footerBlock}>
+            <Text style={s.footerLabel}>Solde actuel</Text>
+            <Text style={[s.footerValue, { color: soldeActuel < 0 ? C.red : C.navy }]}>{fcfa(soldeActuel)}</Text>
           </View>
         </View>
 

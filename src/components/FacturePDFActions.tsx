@@ -182,17 +182,19 @@ export function MultiFactureDownloadButton({ factures }: { factures: FacturePDFD
 }
 
 // ─── Bouton téléchargement rapport carte ─────────────────────────────────────
-export function RapportCarteDownloadButton({ transactions, soldeInitial, soldeFinal, periodeLabel, nbMouvements }: {
+export function RapportCarteDownloadButton({ transactions, soldeInitial, soldeFinal, periodeLabel, nbMouvements, soldeActuel }: {
   transactions: TransactionData[]
   soldeInitial: number
   soldeFinal: number
   periodeLabel: string
   nbMouvements: number
+  soldeActuel: number
 }) {
   if (transactions.length === 0) return null
+  const ascending = [...transactions].reverse()
   return (
     <PDFDownloadLink
-      document={<RapportCartePDFDocument transactions={transactions} soldeInitial={soldeInitial} soldeFinal={soldeFinal} periodeLabel={periodeLabel} nbMouvements={nbMouvements} />}
+      document={<RapportCartePDFDocument transactions={ascending} soldeInitial={soldeInitial} soldeFinal={soldeFinal} periodeLabel={periodeLabel} nbMouvements={nbMouvements} soldeActuel={soldeActuel} />}
       fileName={`rapport-carte-${periodeLabel.toLowerCase().replace(/\s+/g, '-')}.pdf`}
     >
       {({ loading }) => (
